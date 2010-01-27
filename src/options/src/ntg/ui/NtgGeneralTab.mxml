@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ntg:NtgTabContent
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:ntg="ntg.ui.*"
+	width="498" height="467">
+
+	<mx:Script>
+		<![CDATA[
+		
+			import ntg.settingModelClasses.NtgSettingRoot;
+
+			public function setup(settingModel:NtgSettingRoot):void
+			{
+			}
+			
+			
+		]]>
+	</mx:Script>
+
+	<mx:Form x="10" y="10" borderStyle="solid" cornerRadius="8" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" borderThickness="0">
+		<mx:FormHeading label="各タイプのジェスチャーの有効／無効" fontSize="10"/>
+		<mx:FormItem label="マウスジェスチャー">
+			<mx:CheckBox label="有効"/>
+		</mx:FormItem>
+		<mx:FormItem label="ロッカージェスチャー">
+			<mx:CheckBox label="有効"/>
+		</mx:FormItem>
+		<mx:FormItem label="ホイールジェスチャー">
+			<mx:CheckBox label="有効"/>
+		</mx:FormItem>
+	</mx:Form>
+
+</ntg:NtgTabContent>

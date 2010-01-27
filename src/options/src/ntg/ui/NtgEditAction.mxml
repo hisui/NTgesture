@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:ntg="ntg.ui.*"
+	layout="absolute" width="400" height="300" title="アクションの設定">
+	<mx:Script>
+		<![CDATA[
+			
+			import yanp.util.KeyCode;
+
+			import ntg.error.NtgDialogBoxError;
+			import ntg.settingModelClasses.NtgAction;
+		
+			import mx.core.Container;
+			import mx.managers.PopUpManager;
+
+			private var nativeSendKeyKeyCode:int = 0;
+			
+			
+			public function setup(action:NtgAction):void
+			{
+				if(!action) {
+					return;
+				}
+				var list:XMLList = actionList.(hasOwnProperty("@id") && @id == action.id);
+				if(list.length() == 0) {
+					throw new ArgumentError;
+				}
+				actionIdComboBox.selectedItem = list[0];
+				_updateActionPropertyPane();
+			}
+		
+		
+			public function get actionModel():NtgAction
+			{
+				var action:NtgAction = new NtgAction;
+				action.id = actionIdComboBox.selectedItem.@id;
+				return action;
+			}
+		
+		
+			private function _updateActionPropertyPane():void
+			{
+				var item:XML = XML(actionIdComboBox.selectedItem);
+				if(item.hasOwnProperty("@pane")) {
+					actionPropertyPane.selectedChild
+						= Container(actionPropertyPane.getChildByName(item.@id));
+					return;
+				}
+				actionPropertyPane.selectedIndex = 0;
+			}
+			
+			
+			public function OK():Object
+			{
+				var item:XML = XML(actionIdComboBox.selectedItem);
+				if(!item.hasOwnProperty("@id")) {
+					throw new NtgDialogBoxError("アクションを選択せい");
+				}
+				var action:NtgAction = new NtgAction;
+				action.id = item.@id;
+				try {
+					var vars:Object = this.vars_factory::[action.id]();
+					if(!vars) {
+						return null;
+					}
+					action.vars = vars;
+				} catch(e:ReferenceError) {}
+				return action;
+			}
+			
+			
+			namespace vars_factory;
+			
+			vars_factory function pageReload():Object
+			{
+				return {ignoreCache: pageReloadIgnoreCacheCheckBox.selected};
+			}
+			
+			vars_factory function nativeSendKey():Object
+			{
+				if(!KeyCode.nameOf(nativeSendKeyKeyCode)) {
+					throw new NtgDialogBoxError("キーが不正です");
+				}
+				var modifierKeys:int = 0;
+				if(nativeSendKeyWithShiftCheckBox.selected) {
+					modifierKeys |= 1;
+				}
+				if(nativeSendKeyWithCtrlCheckBox.selected) {
+					modifierKeys |= 2;
+				}
+				if(nativeSendKeyWithAltCheckBox.selected) {
+					modifierKeys |= 4;
+				}
+				return {
+					keyCode: nativeSendKeyKeyCode,
+					modifierKeys: modifierKeys
+				};
+			}
+			
+			vars_factory function nativeRunJavaScript():Object
+			{
+				return {};
+			}		
+		]]>
+	</mx:Script>
+	<mx:XMLList id="actionList">
+
+		<item label="アクションを選択" />
+
+		<item label="--- Webページ ---" title="yes" />
+		<item label="再読み込み" id="pageReload" pane="true" />
+		<item label="読み込みを中止" id="pageStop" />
+		<item label="進む" id="pageForward" />
+		<item label="戻る" id="pageBack" />
+		
+		<item label="--- タブ ---" title="yes" />
+		<item label="アクティブなタブを閉じる" id="tabClose" />
+		<item label="左側のタブを全て閉じる" id="tabCloseLeftSide" />
+		<item label="右側のタブを全て閉じる" id="tabCloseRightSide" />
+		
+		<item label="--- ウィンドウ ---" title="yes" />
+		<item label="ウィンドウを閉じる" id="windowClose" />
+		
+		<item label="--- 高度な設定 ---" title="yes" />
+		<item label="キーを送る" id="nativeSendKey" pane="true" />
+		<item label="JavaScriptを実行" id="nativeRunJavaScript" pane="true" />
+		<item label="外部コマンド呼出し" id="nativeCommand" pane="true" />
+		
+		<item label="--- その他 ---" title="yes" />
+		<item label="一時的にジェスチャーを無効化" id="nativePreventGesture" />
+		<item label="スリープ" id="otherSleep" />
+	</mx:XMLList>
+
+	<mx:Label x="10" y="10" text="アクションの種類:"/>
+	<mx:ComboBox id="actionIdComboBox" x="99" y="8" labelField="@label"
+		dataProvider="{actionList}"
+		change="_updateActionPropertyPane()"
+		itemRenderer="ntg.ui.editActionClasses.NtgActionIdComboBoxItemRenderer" />
+	
+	<mx:ViewStack x="10" y="36" id="actionPropertyPane" width="361" height="184" borderStyle="solid">
+		<mx:Canvas width="100%" height="100%" />
+		<mx:Canvas label="" width="100%" height="100%">
+			<mx:Label x="10" y="10" text="無効にする時間(秒):"/>
+			<mx:NumericStepper x="116" y="8" minimum="1" value="1"/>
+		</mx:Canvas>
+		<mx:Canvas label="" width="100%" height="100%">
+		</mx:Canvas>
+		<mx:Canvas name="pageReload" width="100%" height="100%">
+			<mx:CheckBox id="pageReloadIgnoreCacheCheckBox" x="10" y="10" label="キャッシュを無視"/>
+		</mx:Canvas>
+		<mx:Canvas name="nativeSendKey" width="100%" height="100%">
+			
+			<mx:Label x="10" y="12" text="キーを選択:"/>
+			<mx:TextInput id="nativeSendKeyKeyCodeInput" x="77" y="10"
+				text="キーをタイプしてください"
+				editable="false"
+				textAlign="center"
+				color="#aaaaaa" fontWeight="bold">
+				
+				<mx:keyDown>
+					<![CDATA[
+
+						var name:String = KeyCode.nameOf(event.keyCode);
+						if(!name) {
+							nativeSendKeyKeyCodeInput.text = "キーをタイプしてください";
+							return;
+						}
+						nativeSendKeyKeyCode = event.keyCode;
+						nativeSendKeyKeyCodeInput.text = name;
+						nativeSendKeyKeyCodeInput.setStyle("color"     , "#000000");
+						nativeSendKeyKeyCodeInput.setStyle("fontWeight", "normal");
+						
+						event.stopImmediatePropagation();
+						event.stopPropagation();
+						event.preventDefault();
+
+					]]>
+				</mx:keyDown>
+			</mx:TextInput>
+
+			<mx:CheckBox id="nativeSendKeyWithShiftCheckBox" x="77" y="40" label="Shift"/>
+			<mx:CheckBox id="nativeSendKeyWithCtrlCheckBox" x="135" y="40" label="Ctrl"/>
+			<mx:CheckBox id="nativeSendKeyWithAltCheckBox" x="187" y="40" label="Alt"/>
+			<mx:Label x="19" y="42" text="修飾キー:"/>
+
+		</mx:Canvas>
+		<mx:Canvas name="nativeRunJavaScript" width="100%" height="100%">
+			<mx:TextArea x="10" y="36" width="339" height="110"/>
+			<mx:Label x="10" y="10" text="JavaScriptを入力してください:"/>
+			<mx:CheckBox x="10" y="152" label="バックグラウンドで実行(非推奨)"/>
+		</mx:Canvas>
+		<mx:Canvas name="nativeCommand" width="100%" height="100%">
+			<mx:Form x="0" y="0">
+				<mx:FormItem label="実行ファイル(絶対パス)">
+					<mx:TextInput/>
+				</mx:FormItem>
+				<mx:FormItem label="コマンドラインオプション">
+					<mx:TextInput/>
+				</mx:FormItem>
+			</mx:Form>
+		</mx:Canvas>
+	</mx:ViewStack>
+	
+	<ntg:NtgDialogButton right="0" bottom="0" />
+	
+</mx:TitleWindow>

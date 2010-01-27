@@ -1,0 +1,348 @@
+<html>
+	<head>
+		<title>Background</title>
+		<script type="text/javascript" src="win32.js" />
+		<script>
+		
+			
+			//-----------------------------------------
+			// グローバル変数定義
+			//-----------------------------------------
+			
+		
+			// 設定ね
+			var Config =
+			{
+			
+				// マウスジェスチャー有効
+				isMouseGestureEnabled: true,
+				
+				// ロッカージェスチャー有効
+				isLockerGestureEnabled: true,
+				
+				// ホイールジェスチャー有効
+				isWheelGestureEnabled: true,
+			
+				// グローバルフックに低レベルフックを利用
+				useLLMouseHook: false,
+				
+				// DLLの機能をJavaScriptで置き換える
+				replaceDLLByJavaScript: false,
+				
+				// Google Chrome の実行ファイル名
+				processModuleFileName: "chrome.exe",
+				
+				// "更新" などの操作を、JavaScriptではなくショートカットキーを通じて実行する
+				useShortcutKey: true,
+
+				// 条件リスト
+				handlers:
+				{
+					"default": {
+						    type: "",				
+						mappings:
+						{
+
+							"EW": {type: "mouse" , actions:[{id: "pageReload", vars: {ignoreCache: true}}]},
+							"WE": {type: "mouse" , actions:[{id: "tabNew", vars: {offset: +1, origin: "CURRENT"}}]},
+							 "S": {type: "mouse" , actions:[{id: "tabClose"}]},
+							"NS": {type: "mouse" , actions:[{id: "pageScrollToHead"}]},
+							"SN": {type: "mouse" , actions:[{id: "pageScrollToFoot"}]},
+							 "N": {type: "mouse" , actions:[{id: "tabReopen"}]},
+							 "W": {type: "mouse" , actions:[{id: "pageBack"}]},
+							 "E": {type: "mouse" , actions:[{id: "pageForward"}]},
+							 "R": {type: "rocker", actions:[{id: "tabSelect", vars: {origin: "CUR", offset: +1}}]},
+							 "L": {type: "rocker", actions:[{id: "tabSelect", vars: {origin: "CUR", offset: -1}}]}
+						}
+					}
+				}
+			};
+		
+		
+			// 利用可能なアクションのセット。外出しの予定
+			var Actions =
+			{
+
+				// アクティブウィンドウにキーを送る
+				nativeSendKey: function (ntg, tab, vars)
+				{
+					ntg.sendKey(vars.keyCode, vars.modifierKeys);
+				},
+				
+				// 現在のページをリロード
+				pageReload: function (ntg, tab, vars)
+				{
+					if(Config.useShortcutKey) {
+						ntg.sendKey(VK_F5, vars.ignoreCache ? 2 : 0);
+						return;
+					}
+					chrome.tabs.executeScript(tab.id, {code: "location.reload("+ vars.ignoreCache +");"});
+				},
+				
+				// ページを戻る
+				pageBack: function (ntg, tab, vars)
+				{
+					if(Config.useShortcutKey) {
+						ntg.sendKey(VK_BACK, 0);
+						return;
+					}
+					chrome.tabs.executeScript(tab.id, {code: "history.back();"});
+				},
+				
+				// ページを進む
+				pageForward: function (ntg, tab, vars)
+				{
+					chrome.tabs.executeScript(tab.id, {code: "history.forward();"});
+				},
+				
+				// 先頭までスクロール
+				pageScrollToHead: function (ntg, tab, vars)
+				{
+					ntg.sendKey(VK_HOME, 0);
+				},
+				
+				// 末尾までスクロール
+				pageScrollToFoot: function (ntg, tab, vars)
+				{
+					ntg.sendKey(VK_END, 0);
+				},
+				
+				// 新しくタブを作る
+				tabNew: function (ntg, tab, vars)
+				{
+					chrome.tabs.create({index: tab.index + 1, selected: true});
+				},
+				
+				// 現在のタブを閉じる
+				tabClose: function (ntg, tab, vars)
+				{
+					chrome.tabs.remove(tab.id);
+				},
+				
+				// 最後に閉じたタブを開く
+				tabReopen: function (ntg, tab, vars)
+				{
+					ntg.sendKey("T".charCodeAt(0), 3);
+				},
+				
+				// 特定のタブを選択する
+				tabSelect: function (ntg, tab, vars)
+				{
+					chrome.tabs.getAllInWindow(undefined, function (tabs)
+					{
+						if(tabs.length < 2) {
+							return;
+						}
+						var offset = vars.offset;
+						switch(vars.origin) {
+						case "SET": offset += 0           ; break;
+						case "CUR": offset += tab.index   ; break;
+						case "END": offset += tabs.length ; break;
+						}
+						if(offset < 0) {
+							offset = tabs.length + offset % tabs.length;
+						}
+						else if(offset >= tabs.length) {
+							offset %= tabs.length;
+						}
+						chrome.tabs.update(tabs[offset].id, {selected: true});
+					});
+				}
+			};
+			
+
+			// ntghk.dll からジェスチャーの通知を受ける人
+			var GestureListener = {
+			
+				// マウスジェスチャーの開始を通知
+				mouseGestureBegin: function ()
+				{},
+				
+				// マウスジェスチャーの終了を通知
+				mouseGestureEnd: function (arrows)
+				{
+					var gestureKey = arrowsToString(arrows);
+					if(gestureKey != "") {
+						//console.log("GestureListener.mouseGestureEnd: key="+ gestureKey);
+						runAction(gestureKey);
+					}
+				},
+				
+				// マウスジェスチャーの進行を通知
+				mouseGestureProgress: function ()
+				{},
+				
+				// ロッカージェスチャーの終了を通知(適当)
+				rockerGestureEnd: function (isLeft)
+				{
+					runAction(isLeft ? "L" : "R");		
+				}
+
+			};
+			
+			
+			// document.getElementById("NTG") で取れるやつ
+			var NTG;
+			
+			
+			//-----------------------------------------
+			// 関数定義
+			//-----------------------------------------
+			
+			
+			// 指定したジェスチャーキーにマッピングされとるアクションを実行
+			function runAction(gestureKey)
+			{
+				chrome.tabs.getSelected(undefined, function (tab)
+				{
+
+					var mappings = getMappings(tab, gestureKey);
+					var candidate = null;
+					for(var i in mappings) {
+						var mapping = mappings[i];
+						if(!mapping.hasOwnProperty("priority") || mapping.priority == -1) {
+							runActionList(mapping.actions, tab);
+						}
+						else if(!candidate || mapping.priority > candidate.priority) {
+							candidate = mapping;
+						}
+					}
+					if(candidate) {
+						runActionList(candidate.actions, tab);
+					}
+				});
+			}
+				
+			
+			// アクションリストを実行
+			function runActionList(actions, tab)
+			{
+				for(var i in actions) {
+					var action = actions[i];
+					Actions[action.id](
+						NTG, tab, action.hasOwnProperty("vars") ? action.vars : null);
+				}
+			}
+			
+			
+			// 条件に適合するマッピングを全て取得する
+			function getMappings(tab, gestureKey)
+			{
+
+				var handlerNames = {};
+				var mappings = [];
+
+				for(var name in Config.handlers) {
+					var handler = Config.handlers[name];
+					if(!handler.mappings.hasOwnProperty(gestureKey)) {
+						continue;
+					}
+					var a = [name];
+				outer:
+					for(;;) {
+						name = a.pop();
+						if(handlerNames.hasOwnProperty(name)) {
+							continue;
+						}
+						handlerNames[name] = true;
+						var handler_ = Config.handlers[name];
+						switch(handler_.type) {
+						case "URLMatch":
+							if(!(typeof(tab.url) == "string"
+								&& tab.url.match(handler_.vars.pattern)))
+							{
+								break ouetr;
+							}
+							break;
+
+						default:
+							break;
+						}
+						if(handler_.hasOwnProperty("handlerNames")
+							&& handler_.handlerNames.length != 0)
+						{
+							Array.push.apply(a, handler_.handlerNames);
+						}
+						else if(a.length == 0) {
+							mappings.push(handler_.mappings[gestureKey]);
+							break;
+						}
+					}
+				}
+				return mappings;
+			}
+
+
+			// body.onload
+			function onLoad()
+			{
+
+				var config = localStorage["Config"];
+				if(config && (config = JSON.parse(config))) {
+					Config = config;
+				}
+				readConfig(config);
+				
+				NTG = document.getElementById("NTG");
+
+				//NTG.install();
+				NTG.setGestureListener(GestureListener);				
+			}
+			
+			
+			// 設定を保存する(options.htmlから呼び出される予定)
+			function updateConfig(config, store)
+			{
+				Config = config;
+				readConfig(config);
+				if(store) {
+					localStorage["Config"] = JSON.stringify(config);
+				}
+			}
+			
+			
+			//
+			function readConfig(config)
+			{
+				
+				//var NTG = document.getElementById("NTG");
+				
+				//NTG.setMouseGestureEnabled(config.isMouseGestureEnabled);
+				//NTG.setLockerGestureEnabled(config.isLockerGestureEnabled);
+			}
+			
+			
+			// ビット列で表現されたマウスジェスチャーの方向リストを文字列に変換
+			function arrowsToString(arrows)
+			{
+				if(arrows == 0x10) {
+					return "";
+				}
+				var arrow = arrows & 0x03;
+				var s = "";
+				for(;;) {
+					if(s != "") {
+						var tmp = (arrows >>>= 2) & 0x03;
+						if(tmp == 0) {
+							return s;
+						}
+						if(tmp <= arrow) {
+							--tmp;
+						}
+						arrow = tmp;
+					}
+					switch(arrow) {
+					case 0: s += 'E'; break;
+					case 1: s += 'W'; break;
+					case 2: s += 'N'; break;
+					case 3: s += 'S'; break;
+					}
+				}
+			}
+			
+		</script>
+	</head>
+	<body onload="onLoad()">
+		<object id="NTG" type="application/x-NTG-plugin" hidden="true">OMG</object>
+	</body>
+</html>

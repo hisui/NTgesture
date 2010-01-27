@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:ntg="ntg.ui.*"
+	layout="absolute" width="400" height="380" title="マッピングの編集">
+
+	<mx:Script>
+		<![CDATA[
+		
+			import ntg.events.NtgDialogBoxEvent;
+			import ntg.error.NtgDialogBoxError;
+			import ntg.settingModelClasses.NtgRockerGestureInput;
+			import ntg.settingModelClasses.NtgGestureInput;
+			import ntg.settingModelClasses.NtgMapping;
+			import ntg.settingModelClasses.NtgMouseGestureInput;
+			import ntg.settingModelClasses.NtgAction;
+		
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.collections.ArrayCollection;
+			
+			private static const _kDefaultMappingModel:NtgMapping = new NtgMapping;
+			_kDefaultMappingModel.handlerName = "default";
+			_kDefaultMappingModel.gestureType = "mouse";
+			
+			private static const _kGestureTypes:Array =
+			[{label: "マウスジェスチャー", type: "mouse"}
+			,{label: "ロッカージェスチャー", type: "rocker"}];
+			
+			[Bindable]
+			private var _actions:ArrayCollection = new ArrayCollection;
+			
+			public function setup(mappingModel:NtgMapping,
+				handlerNames:Array, handlerName:String=null):void
+			{
+
+				if(!mappingModel) {
+					mappingModel = _kDefaultMappingModel;
+				}
+				for(var i:int = 0; i < _kGestureTypes.length; ++i) {
+					if(_kGestureTypes[i].type == mappingModel.gestureType) {
+						gestureTypeComboBox.selectedIndex = i;
+						break;
+					}
+				}
+				if(i == _kGestureTypes.length) {
+					throw new ArgumentError;
+				}
+				if(mappingModel.gestureInput) {
+					this.gesture_input_read::[mappingModel.gestureType](mappingModel.gestureInput);
+				}
+				_actions = new ArrayCollection(mappingModel.actions);
+				priorityInput.value = mappingModel.priority;
+				
+				handlerNamesComboBox.dataProvider = handlerNames;
+				if(handlerName) {
+					handlerNamesComboBox.selectedItem = handlerName;
+				}
+				else {
+					var j:int = handlerNames.indexOf(mappingModel.handlerName);
+					if(j != -1) {
+						handlerNamesComboBox.selectedIndex = j;
+					}
+				}
+			}
+
+			private function _addAction():void
+			{
+				var popup:NtgEditAction = NtgEditAction(PopUpManager.createPopUp(this, NtgEditAction, true));
+				popup.setup(null);
+				popup.addEventListener("OK", function (event:NtgDialogBoxEvent):void
+				{
+					_actions.addItem(event.result);
+				});
+				PopUpManager.centerPopUp(popup);
+			}
+
+			private function _editAction(index:int):void
+			{
+				var popup:NtgEditAction = NtgEditAction(PopUpManager.createPopUp(this, NtgEditAction, true));
+				popup.setup(NtgAction(_actions.getItemAt(index)));
+				popup.addEventListener("OK", function (event:NtgDialogBoxEvent):void
+				{
+					_actions.setItemAt(event.result, index);
+				});
+				PopUpManager.centerPopUp(popup);
+			}
+			
+			private function _addArrow(arrow:String):void
+			{
+				if(mouseGestureArrowsInput.text.length == NtgMouseGestureInput.kMaxArrows) {
+					return;
+				}
+				mouseGestureArrowsInput.text += arrow;
+			}
+			
+			public function OK():Object
+			{
+
+				if(_actions.length == 0) {
+					throw new NtgDialogBoxError("アクションを設定してください");
+				}
+
+				var mappingModel:NtgMapping = new NtgMapping;
+				var gestureType:String = gestureTypeComboBox.selectedItem.type;
+
+				mappingModel.handlerName = String(handlerNamesComboBox.selectedItem) || "default";
+				mappingModel.gestureType = gestureType;
+				mappingModel.gestureInput = this.gesture_input_show::[gestureType]();
+				mappingModel.actions = _actions.source.concat();
+				mappingModel.priority = ignorePriorityCheckBox.selected ? -1 : priorityInput.value;
+
+				return mappingModel;
+			}
+			
+			namespace gesture_input_show;
+			
+			gesture_input_show function mouse():NtgGestureInput
+			{
+				if(mouseGestureArrowsInput.text == "") {
+					throw new NtgDialogBoxError("ジェスチャーを入力してください");
+				}
+				var gestureInput:NtgMouseGestureInput = new NtgMouseGestureInput;
+				gestureInput.arrows = mouseGestureArrowsInput.text
+					.replace(/→/g, "E")
+					.replace(/←/g, "W")
+					.replace(/↑/g, "N")
+					.replace(/↓/g, "S")
+					;
+				return gestureInput;
+			}
+
+			gesture_input_show function rocker():NtgGestureInput
+			{
+				var gestureInput:NtgRockerGestureInput = new NtgRockerGestureInput;
+				gestureInput.isLeftToRight = rockerGestureIsLToRRadioButton.selected;
+				return gestureInput;
+			}
+			
+			namespace gesture_input_read;
+
+			gesture_input_read function mouse(gestureInput:NtgMouseGestureInput):void
+			{
+				mouseGestureArrowsInput.text = gestureInput.asArrowNotation();
+			}
+
+			gesture_input_read function rocker(gestureInput:NtgRockerGestureInput):void
+			{
+				rockerGestureIsLToRRadioButton.selected =  gestureInput.isLeftToRight;
+				rockerGestureIsRToLRadioButton.selected = !gestureInput.isLeftToRight;
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:Label x="10" y="12" text="ジェスチャーのタイプ:"/>
+	<mx:ComboBox id="gestureTypeComboBox" x="115" y="10" dataProvider="{_kGestureTypes}" />
+	
+	<mx:ViewStack id="gestureInputSettingPane"
+		x="10" y="38"
+		width="360" height="80"
+		selectedIndex="{gestureTypeComboBox.selectedIndex}"
+		borderStyle="solid" cornerRadius="8" borderThickness="1" creationPolicy="all">
+
+		<mx:Canvas width="100%" height="100%" cornerRadius="3">
+			<mx:Canvas x="10" y="10" width="120" height="60">
+				
+				<mx:Button label="←" left="0" verticalCenter="0"
+					click="_addArrow('←')"
+					paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" />
+				<mx:Button label="→" right="0" verticalCenter="0"
+					click="_addArrow('→')"
+					paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" />
+				<mx:Button label="↑" horizontalCenter="0" top="0"
+					click="_addArrow('↑')"
+					paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" />
+				<mx:Button label="↓" bottom="0" horizontalCenter="0"
+					click="_addArrow('↓')"
+					paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" />
+					
+			</mx:Canvas>
+			
+			<mx:Label x="138" text="入力:" verticalCenter="0"/>
+			<mx:TextInput id="mouseGestureArrowsInput" x="176" verticalCenter="0" editable="false" width="114"/>
+			<mx:Button x="298" y="28" label="クリア">
+				<mx:click>
+					<![CDATA[
+						mouseGestureArrowsInput.text = "";
+					]]>
+				</mx:click>
+			</mx:Button>
+			
+		</mx:Canvas>
+		<mx:Canvas width="100%" height="100%">
+			<mx:RadioButtonGroup id="rockerGestureRadioButtonGroup"/>
+			<mx:RadioButton id="rockerGestureIsLToRRadioButton"
+					x="10" y="13" label="左押し→左押し" groupName="rockerGestureRadioButtonGroup" selected="true"/>
+			<mx:RadioButton id="rockerGestureIsRToLRadioButton"
+					x="10" y="39" label="右押し→左押し" groupName="rockerGestureRadioButtonGroup"/>
+		</mx:Canvas>
+	</mx:ViewStack>
+	
+	<mx:DataGrid id="actionsDataGrid"
+		x="10" y="126" height="70" width="360"
+		dataProvider="{_actions}">
+		<mx:columns>
+			<mx:DataGridColumn headerText="アクション" dataField="id"/>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:Button x="266" y="204" label="追加" click="_addAction()" />
+	<mx:Button x="322" y="204"
+		label="削除" enabled="{!!actionsDataGrid.selectedItem}">
+		<mx:click>
+			<![CDATA[
+				_actions.removeItemAt(actionsDataGrid.selectedIndex);
+			]]>
+		</mx:click>
+	</mx:Button>
+	<mx:Button x="10" y="204"
+		label="編集" enabled="{!!actionsDataGrid.selectedItem}">
+		<mx:click>
+			<![CDATA[
+				_editAction(actionsDataGrid.selectedIndex);
+			]]>
+		</mx:click>
+	</mx:Button>
+
+	<mx:Label x="10" y="264" text="優先度:"/>
+	<mx:NumericStepper id="priorityInput"
+		x="58" y="262" value="7" minimum="0" maximum="15" enabled="{!ignorePriorityCheckBox.selected}" />
+
+	<mx:CheckBox id="ignorePriorityCheckBox"
+		x="124" y="262" label="優先度を無視する(多重実行されます)"/>
+
+	<mx:Label x="10" y="236" text="条件名:"/>
+	<mx:ComboBox id="handlerNamesComboBox" x="58" y="234"></mx:ComboBox>
+
+	<ntg:NtgDialogButton right="0" bottom="0" />
+</mx:TitleWindow>

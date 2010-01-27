@@ -1,0 +1,44 @@
+
+#include "resource.h"
+#include <windows.h>
+
+IDB_BITMAP1 BITMAP "arrow_e.bmp"
+IDB_BITMAP2 BITMAP "arrow_w.bmp"
+IDB_BITMAP3 BITMAP "arrow_n.bmp"
+IDB_BITMAP4 BITMAP "arrow_s.bmp"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904e4"
+        BEGIN
+            VALUE "CompanyName"     , "none"
+            VALUE "FileDescription" , "NPAPI Plug-in of NTgesture for Google Chrome."
+            VALUE "FileExtents"     , ""
+            VALUE "FileOpenName"    , "NTgesture for Google Chrome"
+            VALUE "FileVersion"     , "1, 0, 0, 0"
+            VALUE "InternalName"    , "NTgesture"
+            VALUE "LegalCopyright"  , "Copyright (C) 2010 hiusui"
+            VALUE "MIMEType"        , "application/x-ntg-plugin"
+            VALUE "OriginalFilename", "ntg32.dll"
+            VALUE "ProductName"     , "NTgesture"
+            VALUE "ProductVersion"  , "1, 0, 0, 0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1252
+    END
+END

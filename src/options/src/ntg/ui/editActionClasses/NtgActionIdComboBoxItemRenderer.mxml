@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Label xmlns:mx="http://www.adobe.com/2006/mxml" text="{data.@label}">
+	<mx:dataChange>
+		<![CDATA[
+		
+            if(data.@title == "yes") {
+            	setStyle( "fontWeight", "bold");
+            	setStyle(  "fontStyle", "italic");
+            	setStyle(  "textAlign", "center");
+            	setStyle(      "color", "#007700");
+            } else {
+            	setStyle( "fontWeight", "normal");
+            	setStyle(  "fontStyle", "normal");
+            	setStyle(  "textAlign", "left");
+            	setStyle(      "color", "#000000");
+            }
+		]]>
+	</mx:dataChange>
+</mx:Label>

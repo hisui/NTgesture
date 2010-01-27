@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	width="498" height="467"
+	backgroundColor="#EEEEEE">
+
+	<mx:Script>
+		<![CDATA[
+			
+			import mx.managers.PopUpManager;
+			
+			public function createPopUp(clazz:Class):*
+			{
+				return PopUpManager.createPopUp(this, clazz, true);
+			}
+			
+		]]>
+	</mx:Script>
+
+</mx:Canvas>

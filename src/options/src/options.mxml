@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:ntg="ntg.ui.*"
+	layout="absolute"
+	backgroundAlpha="0"
+	applicationComplete="main()">
+	<mx:Style>
+	
+		TabNavigator { 
+			cornerRadius: 0;
+			
+			            tabStyleName: tab; 
+			       firstTabStyleName: tab; 
+			        lastTabStyleName: tab; 
+			selectedTabTextStyleName: selectedTabText; 
+		}
+		.tab {
+			cornerRadius: 5;
+			fontWeight: normal;
+		} 
+		.selectedTabText {
+			cornerRadius: 5;
+			fontWeight: bold;
+		}
+		
+		TitleWindow {
+			backgroundColor: #eeeeee;
+			   cornerRadius: 3;
+			          color: #000000;
+			borderThickness: 1;
+			    borderStyle: solid;
+			    borderColor: #b1b1b1;
+			   headerColors: #eeeeee, #eeeeee;
+			   footerColors: #eeeeee, #eeeeee;
+		}
+		
+		Button {
+			fontWeight: normal;
+		}
+		
+	</mx:Style>
+	<mx:Script>
+		<![CDATA[
+		
+			import yanp.util.Strings;
+			import yanp.util.JSONEncoder;
+			import yanp.util.JSONDecoder;
+			
+			import ntg.settingModelClasses.NtgSettingRoot;
+		
+			private var _settingModel:NtgSettingRoot;
+		
+		
+			private function main():void
+			{
+
+				var config:Object = JSONDecoder.decode(parameters.config);
+				
+				_settingModel = new NtgSettingRoot;
+				_settingModel.read(config);
+				
+				generalTab.setup(_settingModel);
+				mappingTab.setup(_settingModel);
+				underTheHoodTab.setup(_settingModel);
+				debugTab.setup(_settingModel);
+				
+			}
+			
+			
+			public function export():Object
+			{
+				var settingModel:NtgSettingRoot = new NtgSettingRoot;
+				//generalTab.export(settingModel);
+				mappingTab.export(settingModel);
+				//underTheHoodTab.export(settingModel);
+				return settingModel.show();
+			}
+			
+			
+			private function finish():void
+			{
+				var url:String = parameters.href +"?store=yes&config="
+					+ encodeURIComponent(JSONEncoder.encode(export()));
+				
+				// ExternalInterface が使えないんだから仕方ないよね
+				navigateToURL(new URLRequest(url), "_self");
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:TabNavigator x="0" y="0" width="500" height="500" backgroundColor="#EEEEEE">
+		<ntg:NtgGeneralTab      label="一般"    id="generalTab"/>
+		<ntg:NtgMappingTab      label="マッピング" id="mappingTab" />
+		<ntg:NtgUnderTheHoodTab label="詳細"    id="underTheHoodTab"/>
+		<ntg:NtgDebugTab        label="デバッグ"  id="debugTab"/>
+	</mx:TabNavigator>
+	<mx:Button x="369" y="508" label="設定を保存して適用する" click="finish()" height="22"/>
+	
+</mx:Application>

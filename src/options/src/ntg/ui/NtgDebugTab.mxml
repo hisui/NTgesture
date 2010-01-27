@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ntg:NtgTabContent
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:ntg="ntg.ui.*"
+	width="498" height="467">
+
+	<mx:Script>
+		<![CDATA[
+		
+			import yanp.util.JSONEncoder;
+		
+			import mx.core.Application;
+		
+			import ntg.settingModelClasses.NtgSettingRoot;
+			
+			private var _settingModel:NtgSettingRoot;
+
+			
+			public function setup(settingModel:NtgSettingRoot):void
+			{
+				_settingModel = settingModel;
+			}
+			
+			
+			public function showConfigJSON(config:Object):void
+			{
+				textArea.text = JSONEncoder.encode(config, doPrettyPrintCheckBox.selected);
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:TextArea id="textArea" x="10" y="10" width="478" height="417"/>
+	<mx:Label x="10" y="437" text="JSON表示:"/>
+	<mx:Button x="76" y="435" label="変更前" click="showConfigJSON(_settingModel.show())"/>
+	<mx:Button x="140" y="435" label="変更済み" click="showConfigJSON(Application.application.export())"/>
+	<mx:CheckBox id="doPrettyPrintCheckBox" x="214" y="435" label="整形表示" selected="true"/>
+
+</ntg:NtgTabContent>

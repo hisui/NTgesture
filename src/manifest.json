@@ -1,0 +1,28 @@
+{
+	"name": "NTgesture",
+	"description": "Mouse Gesture Extension for Google Chrome on Windows.",
+	"version": "0.0.1",
+	//"default_locale": "ja_JP",
+	"permissions": [
+		"tabs",
+		"http://*/*",
+		"https://*/*"
+	],
+	"icons": {
+		 "16": "images/ntg16.png",
+		 "32": "images/ntg32.png",
+		 "64": "images/ntg64.png",
+		"128": "images/ntg128.png"
+	},
+	"background_page": "background.html",
+	"options_page": "options.html",
+	"plugins": [ { "path": "plugin/ntg32.dll", "public": false } ],
+	"content_scripts": [
+		{
+			   "matches": ["http://*/*", "https://*/*"],
+			    "run_at": "document_start",
+			        "js": ["content.js"],
+			"all_frames": false
+		}
+	]
+}

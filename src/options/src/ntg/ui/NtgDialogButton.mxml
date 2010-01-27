@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml">
+	<mx:Script>
+		<![CDATA[
+		
+			import ntg.error.NtgDialogBoxError;
+			import ntg.events.NtgDialogBoxEvent;
+		
+			import mx.controls.Alert;
+			import mx.core.IFlexDisplayObject;
+			import mx.managers.PopUpManager;
+		
+		]]>
+	</mx:Script>
+	<mx:Button label="キャンセル" click="PopUpManager.removePopUp(IFlexDisplayObject(owner))" />
+	<mx:Button label="OK">
+		<mx:click>
+			<![CDATA[
+				var result:*;
+				try {
+					result = Object(owner).OK();
+				} catch(e:NtgDialogBoxError) {
+					Alert.show(e.message, "エラー");
+					return;
+				}
+				if(result) {
+					PopUpManager.removePopUp(IFlexDisplayObject(owner));
+					owner.dispatchEvent(new NtgDialogBoxEvent("OK", result));
+				}
+			]]>
+		</mx:click>
+	</mx:Button>
+</mx:HBox>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ntg:NtgTabContent
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:ntg="ntg.ui.*"
+	width="498" height="467">
+
+	<mx:Script>
+		<![CDATA[
+		
+			import ntg.settingModelClasses.NtgSettingRoot;
+			import ntg.settingModelClasses.NtgHandler;
+			import ntg.settingModelClasses.NtgMapping;
+			import ntg.ui.NtgEditMapping;
+			import ntg.events.NtgDialogBoxEvent;
+			
+			import mx.managers.PopUpManager;
+			import mx.collections.ArrayCollection;
+			
+			[Bindable]
+			private var _mappings:ArrayCollection;
+			
+			[Bindable]
+			private var _handlers:ArrayCollection;
+			
+			
+			public function setup(settingModel:NtgSettingRoot):void
+			{
+				_mappings = new ArrayCollection(settingModel.mappings);
+				_handlers = new ArrayCollection(settingModel.handlers);
+			}
+			
+
+			public function export(settingModel:NtgSettingRoot):void
+			{
+				settingModel.mappings = _mappings.source.concat();
+				settingModel.handlers = _handlers.source.concat();
+			}
+			
+			
+			private function _addMapping():void
+			{
+				var editMapping:NtgEditMapping = createPopUp(NtgEditMapping);
+				var handlerName:String;
+				if(handlersDataGrid.selectedItem) {
+					handlerName = NtgHandler(handlersDataGrid.selectedItem).name;
+				}
+				editMapping.setup(null, _handlerNames, handlerName);
+				editMapping.addEventListener("OK", function (event:NtgDialogBoxEvent):void
+				{
+					_mappings.addItem(event.result);
+				});
+				PopUpManager.centerPopUp(editMapping);
+			}
+			
+			
+			private function _editMapping():void
+			{
+				var index:int = mappingsDataGrid.selectedIndex;
+				var editMapping:NtgEditMapping = createPopUp(NtgEditMapping);
+				editMapping.setup(NtgMapping(_mappings.getItemAt(index)), _handlerNames);
+				editMapping.addEventListener("OK", function (event:NtgDialogBoxEvent):void
+				{
+					_mappings.setItemAt(event.result, index);
+				});
+				PopUpManager.centerPopUp(editMapping);
+			}
+			
+			
+			private function _addHandler():void
+			{
+				var editHandler:NtgEditHandler = createPopUp(NtgEditHandler);
+				editHandler.setup(null, _handlerNames);
+				editHandler.addEventListener("OK", function (event:NtgDialogBoxEvent):void
+				{
+					_handlers.addItem(event.result);
+				});
+				PopUpManager.centerPopUp(editHandler);
+			}
+			
+			
+			private function _removeMapping():void
+			{
+				_mappings.removeItemAt(mappingsDataGrid.selectedIndex);
+			}
+				
+			
+			private function _editHandler():void
+			{
+				var index:int = handlersDataGrid.selectedIndex;
+				var editHandler:NtgEditHandler = createPopUp(NtgEditHandler);
+				editHandler.setup(NtgHandler(_handlers.getItemAt(index)), []);
+				editHandler.addEventListener("OK", function (event:NtgDialogBoxEvent):void
+				{
+					_mappings.setItemAt(event.result, index);
+				});
+				PopUpManager.centerPopUp(editHandler);
+			}
+			
+			
+			private function _removeHandler():void
+			{
+				_handlers.removeItemAt(handlersDataGrid.selectedIndex);
+			}
+			
+			
+			private function get _handlerNames():Array
+			{
+				var a:Array = [];
+				for each(var handler:NtgHandler in _handlers.source) {
+					a.push(handler.name);
+				}
+				return a;
+			}
+			
+		]]>
+	</mx:Script>
+
+	<mx:Label x="10" y="10" text="マッピング設定:"/>
+	<mx:DataGrid id="mappingsDataGrid"
+		x="10" y="36" width="478" height="160"
+		dataProvider="{_mappings}">
+		<mx:columns>
+			<mx:DataGridColumn headerText="条件名" dataField="handlerName" width="15"/>
+			<mx:DataGridColumn headerText="ジェスチャー" dataField="gestureSummary" width="30"/>
+			<mx:DataGridColumn headerText="アクション" dataField="actionSummary" width="55"/>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:Button x="10"  y="204" label="編集" click="_editMapping()" enabled="{!!mappingsDataGrid.selectedItem}"/>
+	<mx:Button x="384" y="204" label="追加" click="_addMapping()"/>
+	<mx:Button x="440" y="204" label="削除" click="_removeMapping()" enabled="{!!mappingsDataGrid.selectedItem}"/>
+	
+	<mx:HRule y="234" width="90%" horizontalCenter="0"/>
+	
+	<mx:Label x="10" y="244" text="マッピング設定を適用する条件:"/>
+	<mx:DataGrid id="handlersDataGrid"
+		x="10" y="270" width="478" height="160"
+		dataProvider="{_handlers}">
+
+		<mx:columns>
+			<mx:DataGridColumn headerText="条件名" dataField="name" width="15"/>
+			<mx:DataGridColumn headerText="内容" dataField="summary" width="85"/>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:Button x="10" y="438" label="編集" click="_editHandler()" enabled="{!!handlersDataGrid.selectedItem}"/>
+	<mx:Button x="384" y="435" label="追加" click="_addHandler()"/>
+	<mx:Button x="440" y="435" label="削除" click="_removeHandler()" enabled="{!!handlersDataGrid.selectedItem}"/>
+
+</ntg:NtgTabContent>

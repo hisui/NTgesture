@@ -1,0 +1,7 @@
+LIBRARY ntghk.dll
+
+EXPORTS
+	installHook     @1
+	uninstallHook   @2
+	setProcessName  @3
+	setDaemonHandle @4

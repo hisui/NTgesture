@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ntg:NtgTabContent
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:ntg="ntg.ui.*"
+	width="498" height="467">
+
+	<mx:Script>
+		<![CDATA[
+		
+			import ntg.settingModelClasses.NtgSettingRoot;
+
+			public function setup(settingModel:NtgSettingRoot):void
+			{
+			}
+			
+		]]>
+	</mx:Script>
+
+	<mx:Label x="10" y="10" text="※注意:" fontWeight="bold" color="#FF0000"/>
+	<mx:Label x="54" y="10" text="上級者向けの設定です。よく分からない場合はいじらない方がいいです。。。" fontWeight="bold"/>
+
+	<mx:CheckBox x="10" y="36" label="ntghk.dll(グローバルフック)をJavaScriptでエミュレート(不安定)"/>	
+	<mx:Label x="10" y="96" text="Google Chrome の実行ファイル名:"/>
+	<mx:TextInput x="193" y="94" text="chrome.exe"/>
+	<mx:CheckBox x="10" y="66" label="グローバルフックにWM_MOUSE_LLを使う"/>
+	
+	<mx:Label x="10" y="439" text="ここで設定した内容は再起動後有効になります" fontWeight="bold"/>
+
+</ntg:NtgTabContent>

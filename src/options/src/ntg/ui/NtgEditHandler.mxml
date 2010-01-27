@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:ntg="ntg.ui.*"
+	layout="absolute"
+	width="400" height="350"
+	title="条件">
+	
+	<mx:Script>
+		<![CDATA[
+		
+			import ntg.error.NtgDialogBoxError;
+			import ntg.settingModelClasses.NtgHandler;
+			
+			import mx.managers.PopUpManager;
+			import mx.core.Container;
+			import mx.controls.Alert;
+			import mx.collections.ArrayCollection;
+			
+			private static const _kDefaultHandlerModel:NtgHandler = new NtgHandler;
+			_kDefaultHandlerModel.type = "";
+			_kDefaultHandlerModel.vars = {};
+			
+			private var _availableHandlerNames:Array;
+			
+			[Bindable]
+			private var _extendedHandlerNames:ArrayCollection = new ArrayCollection;
+			
+			
+			public function setup(handlerModel:NtgHandler, handlerNames:Array):void
+			{
+				if(!handlerModel) {
+					handlerModel = _kDefaultHandlerModel;
+				}
+				avaliableHandlerNamesComboBox.dataProvider
+					= _availableHandlerNames = handlerNames;
+	
+				_extendedHandlerNames = new ArrayCollection(
+					handlerModel.handlerNames.map(
+						function (name:String, ..._:*):Object { return {name: name}; }));
+			}
+			
+			private function _addHandlerName():void
+			{
+				var name:String = String(avaliableHandlerNamesComboBox.selectedItem);
+				for each(var handlerName:Object in _extendedHandlerNames.source) {
+					if(handlerName.name == name) {
+						return;
+					}
+				}
+				_extendedHandlerNames.addItem({name: name});
+			}
+			
+			public function OK():Object
+			{
+
+				if(handlerNameInput.text == "") {
+					throw new NtgDialogBoxError("条件名を設定してください");
+				}
+				if(_availableHandlerNames.indexOf(handlerNameInput.text) != -1)
+				{
+					throw new NtgDialogBoxError("指定された条件名は既に使われています");
+				}
+				var handlerModel:NtgHandler = new NtgHandler;
+				handlerModel.name = handlerNameInput.text;
+				handlerModel.type = XML(handlerTypeComboBox.selectedItem).@type;
+				try {
+					var vars:Object = this.vars_factory::[handlerModel.type]();
+					if(!vars) {
+						return null;
+					}
+					handlerModel.vars = vars;
+				} catch(e:ReferenceError) {}
+				
+				handlerModel.handlerNames
+					= _extendedHandlerNames.source.map(
+						function (name:Object, ..._:*):String { return name.name; });
+				
+				return handlerModel;
+			}
+			
+			namespace vars_factory;
+			
+			vars_factory function URLMatch():Object
+			{
+				if(URLMatchPatternInput.text == "") {
+					throw new NtgDialogBoxError("文字列を入力してください");
+				}
+				return {
+					   pattern: URLMatchPatternInput.text,
+					ignoreCase: URLMatchIgnoreCaseCheckBox.selected,
+					  isRegExp: URLMatchRegExpCheckBox.selected
+				};
+			}
+			
+		]]>
+	</mx:Script>
+
+	<mx:Label x="10" y="10" text="条件名(ユニーク):"/>
+	<mx:TextInput id="handlerNameInput" x="105" y="8" width="183"/>
+
+	<mx:Label x="37" y="40" text="条件の種類:"/>
+	<mx:ComboBox id="handlerTypeComboBox" x="105" y="38" labelField="@label">
+		<mx:dataProvider>
+			<mx:XMLList>
+				<item label="URLが指定した文字列を含む" type="URLMatch" />
+				<item label="常に実行" type="always" />
+			</mx:XMLList>
+		</mx:dataProvider>
+		<mx:change>
+			<![CDATA[
+
+				handlerPropertyPane.selectedChild
+					= Container(handlerPropertyPane.getChildByName(XML(handlerTypeComboBox.selectedItem).@type));
+				
+			]]>
+		</mx:change>
+	</mx:ComboBox>
+	
+	<mx:ViewStack x="0" y="68" id="handlerPropertyPane" width="378" height="80">
+		<mx:Canvas name="URLMatch" width="100%" height="100%">
+			<mx:Label x="10" y="12" text="文字列:"/>
+			<mx:TextInput id="URLMatchPatternInput" x="58" y="10"/>
+			<mx:CheckBox id="URLMatchIgnoreCaseCheckBox" x="10" y="38" label="大文字／小文字を区別"/>
+			<mx:CheckBox id="URLMatchRegExpCheckBox" x="142" y="38" label="正規表現"/>
+		</mx:Canvas>
+		<mx:Canvas name="always" width="100%" height="100%" />
+	</mx:ViewStack>
+	
+	<mx:DataGrid id="extendedHandlerNamesDataGrid"
+		x="0" y="158" width="378" height="75"
+		dataProvider="{_extendedHandlerNames}">
+		<mx:columns>
+			<mx:DataGridColumn headerText="条件の継承" dataField="name"/>
+		</mx:columns>
+	</mx:DataGrid>
+	
+	<mx:Button x="0" y="241" label="削除" enabled="{!!extendedHandlerNamesDataGrid.selectedItem}" />
+	<mx:Button x="54" y="241" label="追加" click="_addHandlerName()" />
+	<mx:ComboBox id="avaliableHandlerNamesComboBox" x="108" y="241" />
+
+	<ntg:NtgDialogButton right="0" bottom="0" />
+</mx:TitleWindow>
