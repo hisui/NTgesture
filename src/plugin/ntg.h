@@ -29,6 +29,9 @@ namespace ntg {
 	};
 }
 
+#ifdef DEBUG_ME
+#define DEBUG_LOG(MSG) debugPrint(MSG)
+
 static void debugPrint(const std::string &msg)
 {
 	std::ofstream fout("C:\\Devel\\tmp\\log.txt", std::ios::out | std::ios::app);
@@ -41,5 +44,10 @@ template<typename T> std::string string_cast(const T &value)
 	oss << value;
 	return oss.str();
 }
+
+#else
+#define DEBUG_LOG(MSG) 
+
+#endif
 
 #endif

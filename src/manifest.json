@@ -1,8 +1,7 @@
 {
-	"name": "NTgesture",
+	"name": "NTgesture Beta",
 	"description": "Mouse Gesture Extension for Google Chrome on Windows.",
 	"version": "0.0.1",
-	//"default_locale": "ja_JP",
 	"permissions": [
 		"tabs",
 		"http://*/*",
@@ -16,13 +15,5 @@
 	},
 	"background_page": "background.html",
 	"options_page": "options.html",
-	"plugins": [ { "path": "plugin/ntg32.dll", "public": false } ],
-	"content_scripts": [
-		{
-			   "matches": ["http://*/*", "https://*/*"],
-			    "run_at": "document_start",
-			        "js": ["content.js"],
-			"all_frames": false
-		}
-	]
+	"plugins": [ { "path": "plugin/ntg32.dll", "public": false } ]
 }

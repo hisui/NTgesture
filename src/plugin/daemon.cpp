@@ -109,7 +109,7 @@ namespace
 		void addArrow(int arrow)
 		{
 			if(_hWnd && 0 <= arrow && arrow < 4) {
-				//debugPrint("TracerWindow.addArrow: arrow="+ string_cast(arrow));
+				//DEBUG_LOG("TracerWindow.addArrow: arrow="+ string_cast(arrow));
 				_animationQueue.push_back(arrow);
 				if(!_timerId) {
 					_timerId = ::SetTimer(_hWnd, 1, 15, NULL);
@@ -148,7 +148,7 @@ namespace
 				wc.lpszClassName = "ntg::TracerWindow";
 
 				if((classAtom = ::RegisterClassEx( &wc )) == 0) {
-					debugPrint("failed to RegisterClassEx: "+ getLastErrorMessage());
+					DEBUG_LOG("failed to RegisterClassEx: "+ getLastErrorMessage());
 				}
 			}
 			return classAtom;
@@ -168,7 +168,7 @@ namespace
 				break;
 
 			case WM_TIMER:
-				//debugPrint("TracerWindow.onMessage: WM_TIMER");
+				//DEBUG_LOG("TracerWindow.onMessage: WM_TIMER");
 				::InvalidateRect(hWnd, NULL, FALSE);
 				break;
 				
@@ -212,7 +212,7 @@ namespace
 		void _onCreate()
 		{
 	
-			//debugPrint("TracerWindow._onCreate: called! hWnd="+ string_cast(_hWnd));
+			//DEBUG_LOG("TracerWindow._onCreate: called! hWnd="+ string_cast(_hWnd));
 			HDC hDC = ::GetDC(_hWnd);
 			
 			#define _LOAD_IMAGE(DEST, RESOURCE_ID)                           \
@@ -235,7 +235,7 @@ namespace
 		void _onPaint(HDC hDC)
 		{
 
-			//debugPrint("TracerWindow._onPaint: called! step="+ string_cast(_animationState.step));
+			//DEBUG_LOG("TracerWindow._onPaint: called! step="+ string_cast(_animationState.step));
 			
 			size_t width;
 			size_t height;
@@ -306,7 +306,7 @@ namespace
 				}
 				_animationState = animation_state_t(_arrowIcon.list[ _animationQueue.front() ]);
 				_animationQueue.pop_front();
-				//debugPrint("TracerWindow._onPaint: start animation!");
+				//DEBUG_LOG("TracerWindow._onPaint: start animation!");
 				break;
 			}
 
@@ -412,7 +412,7 @@ namespace
 		LRESULT onMessage(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 		{
 			
-			//debugPrint("DaemonWindow.onMessage: called!");
+			//DEBUG_LOG("DaemonWindow.onMessage: called!");
 			switch( msg ) {
 			case WM_DESTROY:
 				::PostQuitMessage(0);
@@ -466,7 +466,7 @@ namespace
 				wc.hIconSm       = NULL;
 
 				if((classAtom = ::RegisterClassEx( &wc )) == 0) {
-					debugPrint("Failed to RegisterClassEx: "+ getLastErrorMessage());
+					DEBUG_LOG("Failed to RegisterClassEx: "+ getLastErrorMessage());
 				}
 			}
 			return classAtom;

@@ -64,6 +64,14 @@
 						handlerNamesComboBox.selectedIndex = j;
 					}
 				}
+				
+				// 実行優先度
+				if(mappingModel.priority == -1) {
+					ignorePriorityCheckBox.selected = true;
+				}
+				else {
+					priorityInput.value = mappingModel.priority;
+				}
 			}
 
 			private function _addAction():void

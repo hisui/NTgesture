@@ -23,13 +23,13 @@
 				// ホイールジェスチャー有効
 				isWheelGestureEnabled: true,
 			
-				// グローバルフックに低レベルフックを利用
+				// グローバルフックに低レベルフックを利用(未実装)
 				useLLMouseHook: false,
 				
-				// DLLの機能をJavaScriptで置き換える
+				// DLLの機能をJavaScriptで置き換える(未実装)
 				replaceDLLByJavaScript: false,
 				
-				// Google Chrome の実行ファイル名
+				// Google Chrome の実行ファイル名(未実装)
 				processModuleFileName: "chrome.exe",
 				
 				// "更新" などの操作を、JavaScriptではなくショートカットキーを通じて実行する
@@ -43,18 +43,18 @@
 						mappings:
 						{
 
-							"EW": {type: "mouse" , actions:[{id: "pageReload", vars: {ignoreCache: true}}]},
-							"WE": {type: "mouse" , actions:[{id: "tabNew", vars: {offset: +1, origin: "CURRENT"}}]},
-							 "S": {type: "mouse" , actions:[{id: "tabClose"}]},
-							"NS": {type: "mouse" , actions:[{id: "pageScrollToHead"}]},
-							"SN": {type: "mouse" , actions:[{id: "pageScrollToFoot"}]},
-							 "N": {type: "mouse" , actions:[{id: "tabReopen"}]},
-							 "W": {type: "mouse" , actions:[{id: "pageBack"}]},
-							 "E": {type: "mouse" , actions:[{id: "pageForward"}]},
-							 "R": {type: "rocker", actions:[{id: "tabSelect", vars: {origin: "CUR", offset: +1}}]},
-							 "L": {type: "rocker", actions:[{id: "tabSelect", vars: {origin: "CUR", offset: -1}}]},
-							 "U": {type: "wheel" , actions:[{id: "tabSelect", vars: {origin: "CUR", offset: -1}}]},
-							 "D": {type: "wheel" , actions:[{id: "tabSelect", vars: {origin: "CUR", offset: +1}}]}
+							"EW": {type: "mouse" , prio: 5, actions:[{id: "pageReload", vars: {ignoreCache: true}}]},
+							"WE": {type: "mouse" , prio: 5, actions:[{id: "tabNew", vars: {offset: +1, origin: "CURRENT"}}]},
+							 "S": {type: "mouse" , prio: 5, actions:[{id: "tabClose"}]},
+							"NS": {type: "mouse" , prio: 5, actions:[{id: "pageScrollToHead"}]},
+							"SN": {type: "mouse" , prio: 5, actions:[{id: "pageScrollToFoot"}]},
+							 "N": {type: "mouse" , prio: 5, actions:[{id: "tabReopen"}]},
+							 "W": {type: "mouse" , prio: 5, actions:[{id: "pageBack"}]},
+							 "E": {type: "mouse" , prio: 5, actions:[{id: "pageForward"}]},
+							 "R": {type: "rocker", prio: 5, actions:[{id: "tabSelect", vars: {origin: "CUR", offset: +1}}]},
+							 "L": {type: "rocker", prio: 5, actions:[{id: "tabSelect", vars: {origin: "CUR", offset: -1}}]},
+							 "U": {type: "wheel" , prio: 5, actions:[{id: "tabSelect", vars: {origin: "CUR", offset: -1}}]},
+							 "D": {type: "wheel" , prio: 5, actions:[{id: "tabSelect", vars: {origin: "CUR", offset: +1}}]}
 						}
 					},
 					"youtube": {
@@ -67,7 +67,7 @@
 						},
 						mappings:
 						{
-							"NS": {type: "mouse" , actions:[{id: "pageReload", vars: {ignoreCache: true}}]}
+							"NS": {type: "mouse" , prio: 7, actions:[{id: "pageReload", vars: {ignoreCache: true}}]}
 						}
 					}
 				}
@@ -223,7 +223,7 @@
 				nativeCommand: function (ntg, tab, vars)
 				{
 					ntg.createProcess(vars.fileName, vars.commandLine);
-				}
+				},
 				
 				
 				//--------------------------------------------
@@ -233,7 +233,8 @@
 				// 一時的にジェスチャーを無効化(THE 適当)
 				ntgTemporarilyInvalidateGesture: function (ntg, tab, vars)
 				{
-					ntg.sendKey(vars.keyCode, vars.modifierKeys);
+					ntg.setGestureMask(0);
+					setTimeout(setGestureMask, vars.time * 1000);
 				},
 
 
@@ -298,10 +299,10 @@
 					var candidate = null;
 					for(var i in mappings) {
 						var mapping = mappings[i];
-						if(!mapping.hasOwnProperty("priority") || mapping.priority == -1) {
+						if(!mapping.prio == -1) {
 							runActionList(mapping.actions, tab);
 						}
-						else if(!candidate || mapping.priority > candidate.priority) {
+						else if(!candidate || mapping.prio > candidate.prio) {
 							candidate = mapping;
 						}
 					}
@@ -319,7 +320,7 @@
 					var action = actions[i];
 					if(action.id == "ntgWait") {
 						// <(^_^;)
-						setTimeout(arguments.callee, 1000 * action.vars.time, actions.slice(i + 1), tab);
+						setTimeout(arguments.callee, action.vars.time, actions.slice(i + 1), tab);
 						break;
 					}
 					Actions[action.id](
@@ -345,22 +346,48 @@
 					for(;;) {
 						name = a.pop();
 						if(handlerNames.hasOwnProperty(name)) {
-							continue;
+							if(handlerNames[name]) { continue; };
+							break;
 						}
-						handlerNames[name] = true;
+						handlerNames[name] = false;
 						var handler_ = Config.handlers[name];
 						switch(handler_.type) {
 						case "URLMatch":
-							if(!(typeof(tab.url) == "string"
-								&& tab.url.match(handler_.vars.pattern)))
-							{
-								break ouetr;
+						
+							if(typeof(tab.url) != "string") {
+								break outer;
+							}
+							var pattern = handler_.vars.pattern;
+							var url     = tab.url;
+							if(handler_.vars.isRegExp) {
+								var re = handler_.vars["_RegExpCache"];
+								if(!re) {
+									var options = "";
+									if(handler_.vars.ignoreCase) {
+										options += "i";
+									}
+									re = handler_.vars["_RegExpCache"] = new RegExp(handler_.vars.pattern, options);
+								}
+								console.log("HOGEEE:"+ re);
+								if(!re.test(url)) {
+									break outer;
+								}
+							}
+							else {
+								if(handler_.vars.ignoreCase) {
+									pattern = pattern.toLowerCase();
+									url     = url    .toLowerCase();
+								}
+								if(url.indexOf(pattern) == -1) {
+									break outer;
+								}
 							}
 							break;
 
 						default:
 							break;
 						}
+						handlerNames[name] = true;
 						if(handler_.hasOwnProperty("handlerNames")
 							&& handler_.handlerNames.length != 0)
 						{
@@ -397,7 +424,7 @@
 			function updateConfig(config, store)
 			{
 				Config = config || DefaultConfig;
-				readConfig(Config);
+				readConfig();
 				if(store) {
 					localStorage["Config"] = JSON.stringify(Config);
 				}
@@ -405,17 +432,24 @@
 			
 			
 			// 設定を適用する
-			function readConfig(config)
+			function readConfig()
 			{
-				
+				setGestureMask();
+			}
+			
+			
+			// Config.is*Enabled の設定を適用する
+			function setGestureMask()
+			{
+
 				var gestureMask = 0;
-				if(config.isMouseGestureEnabled) {
+				if(Config.isMouseGestureEnabled) {
 					gestureMask |= 1;
 				}
-				if(config.isRockerGestureEnabled) {
+				if(Config.isRockerGestureEnabled) {
 					gestureMask |= 2;
 				}
-				if(config.isWheelGestureEnabled) {
+				if(Config.isWheelGestureEnabled) {
 					gestureMask |= 4;
 				}
 				

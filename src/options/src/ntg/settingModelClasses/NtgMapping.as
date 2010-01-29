@@ -89,15 +89,15 @@ package ntg.settingModelClasses
 					action.read(input);
 					return action;
 			});
-			_priority = input.priority;
+			_priority = input.prio;
 		}
 		
 		public function show():Object
 		{
 			return {
-				     type: _gestureType,
-				  actions: _actions.map(function (action:NtgAction, ..._:*):Object { return action.show(); }),
-				 priority: _priority
+				   type: _gestureType,
+				actions: _actions.map(function (action:NtgAction, ..._:*):Object { return action.show(); }),
+				   prio: _priority
 			};
 		}
 	}

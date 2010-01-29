@@ -3,6 +3,8 @@
 #include "nppScriptableObject.h"
 #include "ntg32.h"
 #include "ntghk.h" // 本当はここでインクルードしたくない。ntghkへの操作はdaemonにカプセル化すること！
+#include <string.h>
+#include <vector>
 #include <map>
 
 namespace
@@ -29,7 +31,7 @@ public:
 	,_gestureListener(0)
 	,_hWnd(0)
 	{
-		//debugPrint("MyScriptableObject: CONSTRUCT");
+		//DEBUG_LOG("MyScriptableObject: CONSTRUCT");
 	}
 	
 	~MyScriptableObject()
@@ -37,12 +39,12 @@ public:
 		if(_gestureListener) {
 			gNPNFuncs->releaseobject(_gestureListener);
 		}
-		//debugPrint("MyScriptableObject: DESTRUCT");
+		//DEBUG_LOG("MyScriptableObject: DESTRUCT");
 	}
 
 	bool hasMethod(NPIdentifier name)
 	{
-		//debugPrint("MyScriptableObject.hasMethod");
+		//DEBUG_LOG("MyScriptableObject.hasMethod");
 		return true;
 	}
 	
@@ -58,37 +60,38 @@ public:
 			_ADD_SO_METHOD(postMessage);
 			_ADD_SO_METHOD(sendKey);
 			_ADD_SO_METHOD(setGestureMask);
+			_ADD_SO_METHOD(createProcess);
 			
 			#undef _ADD_SO_METHOD
 		}
 		so_methods_t::const_iterator i = _methods.find(name);
-		debugPrint("MyScriptableObject.invoke");
+		DEBUG_LOG("MyScriptableObject.invoke");
 		if(i != _methods.end()) {
 			return (this->*i->second)(args, argCount, result);
 		}
 		else {
 			std::ostringstream oss;
 			oss << (uintptr_t)name;
-			debugPrint("\tNo such method:"+ oss.str());
+			DEBUG_LOG("\tNo such method:"+ oss.str());
 		}
 		return false;
 	}
 	
 	bool invokeDefault(const NPVariant *args, uint32_t argCount, NPVariant *result)
 	{
-		//debugPrint("MyScriptableObject.invokeDefault");
+		//DEBUG_LOG("MyScriptableObject.invokeDefault");
 		return true;
 	}
 	
 	bool hasProperty(NPIdentifier name)
 	{
-		//debugPrint("MyScriptableObject.hasProperty");
+		//DEBUG_LOG("MyScriptableObject.hasProperty");
 		return false;
 	}
 	
 	bool getProperty(NPIdentifier name, NPVariant *result)
 	{
-		//debugPrint("MyScriptableObject.getProperty");
+		//DEBUG_LOG("MyScriptableObject.getProperty");
 		return false;
 	}
 	
@@ -162,21 +165,9 @@ public:
 
 private:
 
-#defien _COERCE_ARGS_X(COUNT, TYPE) && (args[COUNT].type == TYPE)
-#define _COERCE_ARGS_5(TYPE, ...) _COERCE_ARGS_X(4, TYPE) _COERCE_ARGS_4(__VA_ARGS__)
-#define _COERCE_ARGS_4(TYPE, ...) _COERCE_ARGS_X(3, TYPE) _COERCE_ARGS_3(__VA_ARGS__)
-#define _COERCE_ARGS_3(TYPE, ...) _COERCE_ARGS_X(2, TYPE) _COERCE_ARGS_2(__VA_ARGS__)
-#define _COERCE_ARGS_2(TYPE, ...) _COERCE_ARGS_X(1, TYPE) _COERCE_ARGS_1(__VA_ARGS__)
-#define _COERCE_ARGS_1(TYPE)      _COERCE_ARGS_X(0, TYPE)
-#define _COERCE_ARGS_0(COUNT)
-
-// 引数チェケラッチョ
-#define COERCE_ARGS(COUNT, ...) ((COUNT == argCount) && _COERCE_ARGS_#COUNT(__VA_ARGS__))
-
-
 	bool setGestureListener(const NPVariant *args, uint32_t argCount, NPVariant *result)
 	{
-		//debugPrint("MyScriptableObject.setGestureListener: called!!!");
+		//DEBUG_LOG("MyScriptableObject.setGestureListener: called!!!");
 		if(argCount == 1 && args[0].type == NPVariantType_Object) {
 			if(_gestureListener) {
 				gNPNFuncs->releaseobject(_gestureListener);
@@ -266,14 +257,22 @@ private:
 
 	bool createProcess(const NPVariant *args, uint32_t argCount, NPVariant *result)
 	{
-		if(COERCE_ARGS(2, NPVariantType_String, NPVariantType_String)) {
+		if(argCount == 2
+			&& args[0].type == NPVariantType_String
+			&& args[1].type == NPVariantType_String)
+		{
 		
+			const NPString &commandLineRaw = args[1].value.stringValue;
+			std::vector<char> commandLine(commandLineRaw.UTF8Characters,
+				commandLineRaw.UTF8Characters + strlen(commandLineRaw.UTF8Characters) + 1);
+			// MEMO: UTF8Length は多分、UTF8をデコードした時の文字数？
+
 			STARTUPINFO startUpInfo = {0};
 			PROCESS_INFORMATION processInfo;
 
 			::CreateProcess(
 				args[0].value.stringValue.UTF8Characters,
-				args[1].value.stringValue.UTF8Characters, // __inout なので、ヤバイかもね
+				&commandLine[0],
 				NULL,
 				NULL,
 				FALSE,
@@ -283,6 +282,8 @@ private:
 				&startUpInfo,
 				&processInfo
 			);
+			
+			// ISSUE: つか、NPStringって開放しなきていいの？
 		}
 		return true;
 	}
@@ -295,18 +296,18 @@ NPError NP_LOADDS NPP_New(NPMIMEType pluginType, NPP instance,
 						  uint16_t mode, int16_t argc, char* argn[],
 						  char* argv[], NPSavedData* saved)
 {
-	//debugPrint("NP_New");
+	//DEBUG_LOG("NP_New");
 	return NPERR_NO_ERROR;
 }
 
 NPError NP_LOADDS NPP_Destroy(NPP instance, NPSavedData** save) {
-	//debugPrint("NPP_Destroy");
+	//DEBUG_LOG("NPP_Destroy");
 	return NPERR_NO_ERROR;
 }
 
 NPError NP_LOADDS NPP_GetValue(NPP instance, NPPVariable variable, void* value)
 {
-	//debugPrint("NPP_GetValue");
+	//DEBUG_LOG("NPP_GetValue");
 
 	switch(variable) {
 	case NPPVpluginNameString:
@@ -332,12 +333,12 @@ NPError NP_LOADDS NPP_GetValue(NPP instance, NPPVariable variable, void* value)
 }
 
 NPError NP_LOADDS NPP_HandleEvent(NPP instance, void* ev) {
-	//debugPrint("NPP_HandleEvent");
+	//DEBUG_LOG("NPP_HandleEvent");
 	return NPERR_NO_ERROR;
 }
 
 NPError NP_LOADDS NPP_SetWindow(NPP instance, NPWindow* pNPWindow) {
-	//debugPrint("NPP_SetWindow");
+	//DEBUG_LOG("NPP_SetWindow");
 	_hWnd = reinterpret_cast<HWND>(pNPWindow->window);
 	return NPERR_NO_ERROR;
 }

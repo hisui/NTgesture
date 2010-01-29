@@ -29,7 +29,7 @@ extern "C" {
 	}
 
 	NPError OSCALL NP_GetEntryPoints(NPPluginFuncs* pFuncs) {
-		//debugPrint("NP_GetEntryPoints");
+		//DEBUG_LOG("NP_GetEntryPoints");
 		pFuncs->version   = (NP_VERSION_MAJOR << 8) | NP_VERSION_MINOR;
 		pFuncs->newp      = NPP_New;
 		pFuncs->destroy   = NPP_Destroy;
@@ -41,7 +41,7 @@ extern "C" {
 
 	NPError OSCALL NP_Initialize(NPNetscapeFuncs* aNPNFuncs)
 	{
-		//debugPrint("NP_Initialize");
+		//DEBUG_LOG("NP_Initialize");
 		gNPNFuncs = aNPNFuncs;
 
 		if(_initialized) {
@@ -55,7 +55,7 @@ extern "C" {
 
 	NPError OSCALL NP_Shutdown()
 	{
-		//debugPrint("NP_Shutdown");
+		//DEBUG_LOG("NP_Shutdown");
 		if(_initialized) {
 			ntg::stopDaemon();
 		}
@@ -64,7 +64,7 @@ extern "C" {
 
 	char* NP_GetMIMEDescription()
 	{
-		//debugPrint("NP_GetMIMEDescription");
+		//DEBUG_LOG("NP_GetMIMEDescription");
 		return "application/x-ntg-plugin";
 	}
 }

@@ -78,7 +78,7 @@ namespace
 		DWORD tid = ::GetWindowThreadProcessId(hWnd, &pid);
 		HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
 		if(hProcess == NULL) {
-			debugPrint("Failed to OpenProcess:"+ getLastErrorMessage());
+			DEBUG_LOG("Failed to OpenProcess:"+ getLastErrorMessage());
 			return false;
 		}
 		len = ::GetModuleBaseName(hProcess, NULL, name, bufLen);
@@ -99,7 +99,7 @@ namespace
 	// マウスジェスチャーの開始を通知
 	void notifyMouseGestureBegin(HWND hWnd, int arrow)
 	{
-		//debugPrint("notifyMouseGestureBegin: called! daemonWnd="+ string_cast(shared::daemonWnd));
+		//DEBUG_LOG("notifyMouseGestureBegin: called! daemonWnd="+ string_cast(shared::daemonWnd));
 		if(shared::daemonWnd) {
 			::PostMessage(shared::daemonWnd, ntg::WM_MGESTUREBEGIN, WPARAM(hWnd), LPARAM(arrow));
 		}
@@ -109,7 +109,7 @@ namespace
 	// マウスジェスチャーの終了を通知
 	void notifyMouseGestureEnd(uint32_t arrows, HWND hWnd)
 	{
-		//debugPrint("notifyMouseGestureEnd: called! daemonWnd="+ string_cast(shared::daemonWnd));
+		//DEBUG_LOG("notifyMouseGestureEnd: called! daemonWnd="+ string_cast(shared::daemonWnd));
 		if(shared::daemonWnd) {
 			::PostMessage(shared::daemonWnd, ntg::WM_MGESTUREEND, arrows, LPARAM(hWnd));
 		}
@@ -119,7 +119,7 @@ namespace
 	// マウスジェスチャーの進行を通知
 	void notifyMouseGestureProgress(int arrow)
 	{
-		//debugPrint("notifyMouseGestureProgress: called! daemonWnd="+ string_cast(shared::daemonWnd));
+		//DEBUG_LOG("notifyMouseGestureProgress: called! daemonWnd="+ string_cast(shared::daemonWnd));
 		if(shared::daemonWnd) {
 			::PostMessage(shared::daemonWnd, ntg::WM_MGESTUREPROGRESS, WPARAM(arrow), 0);
 		}
@@ -129,7 +129,7 @@ namespace
 	// ロッカージェスチャーを通知
 	void notifyRockerGestureEnd(bool isLeft, HWND hWnd)
 	{
-		//debugPrint("notifyRockerGestureEnd: called! daemonWnd="+ string_cast(shared::daemonWnd));
+		//DEBUG_LOG("notifyRockerGestureEnd: called! daemonWnd="+ string_cast(shared::daemonWnd));
 		if(shared::daemonWnd) {
 			::PostMessage(shared::daemonWnd, ntg::WM_RGESTUREEND, (isLeft ? 0 : 1), LPARAM(hWnd));
 		}
@@ -139,7 +139,7 @@ namespace
 	// ホイールジェスチャーを通知
 	void notifyWheelGestureEnd(bool isUp, HWND hWnd)
 	{
-		//debugPrint("notifyRockerGestureEnd: called! daemonWnd="+ string_cast(shared::daemonWnd));
+		//DEBUG_LOG("notifyRockerGestureEnd: called! daemonWnd="+ string_cast(shared::daemonWnd));
 		if(shared::daemonWnd) {
 			::PostMessage(shared::daemonWnd, ntg::WM_WGESTUREEND, (isUp ? 0 : 1), LPARAM(hWnd));
 		}
@@ -243,7 +243,7 @@ namespace
 		
 		void setGestureTarget(HWND hWnd)
 		{
-			//debugPrint("GestureRecognizer.setGestureTarget: called!");
+			//DEBUG_LOG("GestureRecognizer.setGestureTarget: called!");
 			gestureTarget = hWnd;
 		}
 		
@@ -347,7 +347,7 @@ namespace
 				notifyMouseGestureEnd(Arrows::kEmpty, 0);
 				return preventDefault;
 			}
-			//debugPrint("COMPLETE GESTURE:"+ Arrows::stringify(arrows.arrows) +","+ string_cast(arrows.arrows));
+			//DEBUG_LOG("COMPLETE GESTURE:"+ Arrows::stringify(arrows.arrows) +","+ string_cast(arrows.arrows));
 			notifyMouseGestureEnd(arrows.arrows, gestureTarget);
 			return true;
 		}
@@ -437,9 +437,9 @@ namespace
 		void inactivate()
 		{
 			if(!isActive()) {
-				//debugPrint("GestureRecognizer.inactivate: call ::ReleaseCapture()");
+				//DEBUG_LOG("GestureRecognizer.inactivate: call ::ReleaseCapture()");
 				if(isCaptured && !::ReleaseCapture()) {
-					//debugPrint("GestureRecognizer.inactivate: failed to ::ReleaseCapture: "+ getLastErrorMessage());
+					//DEBUG_LOG("GestureRecognizer.inactivate: failed to ::ReleaseCapture: "+ getLastErrorMessage());
 				}
 				isCaptured = false;
 			}
@@ -527,12 +527,12 @@ namespace
 				// 指定プロセス(shared::processName)の表示領域宛のメッセージかどうかチェック
 				HANDLE hProcess = ::GetCurrentProcess();
 				if(hProcess == NULL) {
-					//debugPrint("failed to ::GetCurrentProcess: "+ getLastErrorMessage());
+					//DEBUG_LOG("failed to ::GetCurrentProcess: "+ getLastErrorMessage());
 					goto fallthrough;
 				}
 				char name[1024];
 				size_t len = ::GetModuleBaseName(hProcess, NULL, name, sizeof(name));
-				debugPrint("MouseProc: name="
+				DEBUG_LOG("MouseProc: name="
 					+ std::string(name, len) +", "
 					+ std::string(shared::processName, shared::processNameLength));
 
@@ -560,12 +560,12 @@ namespace
 				_recognizer.startRockerGesture(isLeft);
 			}
 			
-			//debugPrint("MouseProc: initialized. pid="+ string_cast(::GetCurrentProcessId()) +", id="+ string_cast((unsigned)_hInstance));
+			//DEBUG_LOG("MouseProc: initialized. pid="+ string_cast(::GetCurrentProcessId()) +", id="+ string_cast((unsigned)_hInstance));
 			
 			goto fallthrough;
 		}
 		if(dispatchMouseEvent(wParam, *reinterpret_cast<MOUSEHOOKSTRUCT*>(lParam))) {
-			//debugPrint("MouseProc: preventDefault!");
+			//DEBUG_LOG("MouseProc: preventDefault!");
 			::CallNextHookEx(_hHook, nCode, wParam, lParam);
 			return 1;
 		}
@@ -612,7 +612,7 @@ void WINAPI ntghk_uninstallHook()
 
 int WINAPI ntghk_setProcessName(const char *name, size_t len)
 {
-	debugPrint("setProcessName: name="+ std::string(name, len));
+	DEBUG_LOG("setProcessName: name="+ std::string(name, len));
 	if(len == 0 || len > sizeof(shared::processName)) {
 		return 1;
 	}
@@ -624,7 +624,7 @@ int WINAPI ntghk_setProcessName(const char *name, size_t len)
 
 void WINAPI ntghk_setDaemonHandle(HWND hWnd)
 {
-	debugPrint("setDaemonHandle: hWnd="+ string_cast((unsigned)hWnd));
+	DEBUG_LOG("setDaemonHandle: hWnd="+ string_cast((unsigned)hWnd));
 	shared::daemonWnd = hWnd;
 }
 

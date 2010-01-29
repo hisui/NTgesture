@@ -1,8 +1,8 @@
 @echo off
 
-set CC=cl /EHsc /W3 /Zi -IC:\Devel\lib\npapi -DWIN32=1 -DXP_WIN=1 -D_WINDOWS=1 -DDEBUG_ME=1
+set CC=cl /EHsc /W3 /Ox -IC:\Devel\lib\npapi -DWIN32=1 -DXP_WIN=1 -D_WINDOWS=1
 set IMPORTS=user32.lib gdi32.lib psapi.lib msimg32.lib
-set LINKER=link /DLL /PDB:vc90.pdb /DEBUG
+set LINKER=link /DLL
 
 %CC% -c ntghk.cpp
 %LINKER% /DEF:ntghk.def /OUT:ntghk.dll ntghk.obj %IMPORTS%
