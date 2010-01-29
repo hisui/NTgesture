@@ -18,8 +18,12 @@
 			import mx.collections.ArrayCollection;
 			
 			private static const _kDefaultHandlerModel:NtgHandler = new NtgHandler;
-			_kDefaultHandlerModel.type = "";
+			_kDefaultHandlerModel.type = "always";
 			_kDefaultHandlerModel.vars = {};
+			
+			private static const _kHandlerTypes:Array =
+			[{type:"URLMatch", label:"URLが指定した文字列を含む"}
+			,{type:"always"  , label:"いつでも"}];
 			
 			private var _availableHandlerNames:Array;
 			
@@ -32,17 +36,37 @@
 				if(!handlerModel) {
 					handlerModel = _kDefaultHandlerModel;
 				}
-				avaliableHandlerNamesComboBox.dataProvider
-					= _availableHandlerNames = handlerNames;
-	
-				_extendedHandlerNames = new ArrayCollection(
-					handlerModel.handlerNames.map(
-						function (name:String, ..._:*):Object { return {name: name}; }));
+				
+				// ハンドラ名
+				handlerNameInput.text = handlerModel.name;
+				
+				// ハンドラのタイプとタイプ固有のプロパティ
+				for(var i:int = 0; i < _kHandlerTypes.length; ++i) {
+					if(handlerModel.type == _kHandlerTypes[i].type) {
+						handlerTypeComboBox.selectedIndex = i;
+						break;
+					}
+				}
+				try {
+					this.vars_read::[handlerModel.type](handlerModel.vars);
+				} catch(e:ReferenceError) {}
+				
+				// 選択可能な親条件と継承済みの条件
+				avaliableHandlerNamesComboBox.dataProvider = _availableHandlerNames = handlerNames;
+				if(handlerModel.handlerNames) {
+					_extendedHandlerNames = new ArrayCollection(
+						handlerModel.handlerNames.map(
+							function (name:String, ..._:*):Object { return {name: name}; }));
+				}
 			}
+			
 			
 			private function _addHandlerName():void
 			{
 				var name:String = String(avaliableHandlerNamesComboBox.selectedItem);
+				if(!name) {
+					return;
+				}
 				for each(var handlerName:Object in _extendedHandlerNames.source) {
 					if(handlerName.name == name) {
 						return;
@@ -50,6 +74,7 @@
 				}
 				_extendedHandlerNames.addItem({name: name});
 			}
+			
 			
 			public function OK():Object
 			{
@@ -63,9 +88,9 @@
 				}
 				var handlerModel:NtgHandler = new NtgHandler;
 				handlerModel.name = handlerNameInput.text;
-				handlerModel.type = XML(handlerTypeComboBox.selectedItem).@type;
+				handlerModel.type = handlerTypeComboBox.selectedItem.type;
 				try {
-					var vars:Object = this.vars_factory::[handlerModel.type]();
+					var vars:Object = this.vars_show::[handlerModel.type]();
 					if(!vars) {
 						return null;
 					}
@@ -79,9 +104,11 @@
 				return handlerModel;
 			}
 			
-			namespace vars_factory;
 			
-			vars_factory function URLMatch():Object
+			namespace vars_show;
+			namespace vars_read;
+			
+			vars_show function URLMatch():Object
 			{
 				if(URLMatchPatternInput.text == "") {
 					throw new NtgDialogBoxError("文字列を入力してください");
@@ -92,32 +119,27 @@
 					  isRegExp: URLMatchRegExpCheckBox.selected
 				};
 			}
+			vars_read function URLMatch(vars:Object):void
+			{
+				URLMatchPatternInput.text           = vars.pattern;
+				URLMatchIgnoreCaseCheckBox.selected = vars.ignoreCase;
+				URLMatchRegExpCheckBox.selected     = vars.isRegExp;
+			}
 			
 		]]>
 	</mx:Script>
 
 	<mx:Label x="10" y="10" text="条件名(ユニーク):"/>
-	<mx:TextInput id="handlerNameInput" x="105" y="8" width="183"/>
+	<mx:TextInput id="handlerNameInput" x="105" y="8" width="190"/>
 
 	<mx:Label x="37" y="40" text="条件の種類:"/>
-	<mx:ComboBox id="handlerTypeComboBox" x="105" y="38" labelField="@label">
-		<mx:dataProvider>
-			<mx:XMLList>
-				<item label="URLが指定した文字列を含む" type="URLMatch" />
-				<item label="常に実行" type="always" />
-			</mx:XMLList>
-		</mx:dataProvider>
-		<mx:change>
-			<![CDATA[
-
-				handlerPropertyPane.selectedChild
-					= Container(handlerPropertyPane.getChildByName(XML(handlerTypeComboBox.selectedItem).@type));
-				
-			]]>
-		</mx:change>
-	</mx:ComboBox>
+	<mx:ComboBox id="handlerTypeComboBox" x="105" y="38" width="190" dataProvider="{_kHandlerTypes}" />
 	
-	<mx:ViewStack x="0" y="68" id="handlerPropertyPane" width="378" height="80">
+	<mx:ViewStack id="handlerPropertyPane"
+		x="0" y="68" width="378" height="80"
+		selectedIndex="{handlerTypeComboBox.selectedIndex}"
+		cornerRadius="5" borderStyle="solid" creationPolicy="all">
+	
 		<mx:Canvas name="URLMatch" width="100%" height="100%">
 			<mx:Label x="10" y="12" text="文字列:"/>
 			<mx:TextInput id="URLMatchPatternInput" x="58" y="10"/>

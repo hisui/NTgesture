@@ -79,11 +79,11 @@ package ntg.settingModelClasses
 		
 		public function show():Object
 		{
-			return {
-				handlerNames: _handlerNames,
-				        type: _type,
-				        vars: _vars
-			};
+			var output:Object = {type: _type, vars: _vars}
+			if(_handlerNames && _handlerNames.length != 0) {
+				output.handlerNames = _handlerNames;
+			}
+			return output;
 		}
 		
 	}

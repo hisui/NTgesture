@@ -23,6 +23,9 @@ namespace ntg {
 		
 		// ロッカージェスチャー（ｒｙ
 		WM_RGESTUREEND,
+		
+		// ホイほい
+		WM_WGESTUREEND,
 	};
 }
 

@@ -8,7 +8,7 @@ package ntg.settingModelClasses
 	
 		private var _isMouseGestureEnabled:Boolean;
 		
-		private var _isLockerGestureEnabled:Boolean;
+		private var _isRockerGestureEnabled:Boolean;
 		
 		private var _isWheelGestureEnabled:Boolean;
 	
@@ -38,13 +38,13 @@ package ntg.settingModelClasses
 			_isMouseGestureEnabled = isMouseGestureEnabled;
 		}
 		
-		public function get isLockerGestureEnabled():Boolean
+		public function get isRockerGestureEnabled():Boolean
 		{
-			return _isLockerGestureEnabled;
+			return _isRockerGestureEnabled;
 		}
-		public function set isLockerGestureEnabled(isLockerGestureEnabled:Boolean):void
+		public function set isRockerGestureEnabled(isRockerGestureEnabled:Boolean):void
 		{
-			_isLockerGestureEnabled = isLockerGestureEnabled;
+			_isRockerGestureEnabled = isRockerGestureEnabled;
 		}
 		
 		public function get isWheelGestureEnabled():Boolean
@@ -115,7 +115,7 @@ package ntg.settingModelClasses
 		{
 
 			 _isMouseGestureEnabled = input.isMouseGestureEnabled;
-			_isLockerGestureEnabled = input.isLockerGestureEnabled;
+			_isRockerGestureEnabled = input.isRockerGestureEnabled;
 			 _isWheelGestureEnabled = input.isWheelGestureEnabled;
 			        _useLLMouseHook = input.useLLMouseHook;
 			_replaceDLLByJavaScript = input.replaceDLLByJavaScript;
@@ -139,13 +139,14 @@ package ntg.settingModelClasses
 					var mapping:NtgMapping = new NtgMapping;
 					mapping.read(mappingInputList[key]);
 					
-					var g:NtgGestureInput;
+					var g:NtgGestureKey;
 					switch(mapping.gestureType) {
-					case  "mouse": g = new  NtgMouseGestureInput; break;
-					case "rocker": g = new NtgRockerGestureInput; break;
+					case  "mouse": g = new  NtgMouseGestureKey; break;
+					case "rocker": g = new NtgRockerGestureKey; break;
+					case  "wheel": g = new  NtgWheelGestureKey; break;
 					}
 					g.read(key);
-					mapping.gestureInput = g;
+					mapping.gestureKey = g;
 					mapping.handlerName  = name;
 					_mappings.push(mapping);
 				}
@@ -160,24 +161,25 @@ package ntg.settingModelClasses
 			var mappingsForEachHandler:Object = {};
 			for each(var mapping:NtgMapping in _mappings) {
 				var mappings:Object = (mappingsForEachHandler[mapping.handlerName] ||= {});
-				mappings[String(mapping.gestureInput.show())] = mapping.show();
+				mappings[String(mapping.gestureKey.show())] = mapping.show();
 			}
 
-			var handlers:Object = [];			
+			var handlers:Object = {};
 			for each(var handler:NtgHandler in _handlers) {
-				handlers[handler.name] = handler.show();
+				var raw:Object = handler.show();
+				raw.mappings = mappingsForEachHandler[handler.name];
+				handlers[handler.name] = raw;				
 			}
 			
 			return {
 				 isMouseGestureEnabled: _isMouseGestureEnabled,
-				isLockerGestureEnabled: _isLockerGestureEnabled,
+				isRockerGestureEnabled: _isRockerGestureEnabled,
 				 isWheelGestureEnabled: _isWheelGestureEnabled,
 				        useLLMouseHook: _useLLMouseHook,
 				replaceDLLByJavaScript: _replaceDLLByJavaScript,
 				 processModuleFileName: _processModuleFileName,
 				        useShortcutKey: _useShortcutKey,
-				              handlers: handlers,
-				              mappings: mappings
+				              handlers: handlers
 			};
 		}
 	}

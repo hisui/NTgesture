@@ -3,7 +3,7 @@ package ntg.settingModelClasses
 
 	import ntg.NtgISettingModel;
 
-	public class NtgGestureInput implements NtgISettingModel
+	public class NtgGestureKey implements NtgISettingModel
 	{
 		
 		public function get gestureSummary():String

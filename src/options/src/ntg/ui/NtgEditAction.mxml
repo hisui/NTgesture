@@ -26,6 +26,12 @@
 				if(list.length() == 0) {
 					throw new ArgumentError;
 				}
+				actionPropertyPane.callLater(function ():void
+				{
+					try {
+						vars_read::[action.id](action.vars);
+					} catch(e:ReferenceError) {}
+				});
 				actionIdComboBox.selectedItem = list[0];
 				_updateActionPropertyPane();
 			}
@@ -60,7 +66,7 @@
 				var action:NtgAction = new NtgAction;
 				action.id = item.@id;
 				try {
-					var vars:Object = this.vars_factory::[action.id]();
+					var vars:Object = this.vars_show::[action.id]();
 					if(!vars) {
 						return null;
 					}
@@ -70,17 +76,46 @@
 			}
 			
 			
-			namespace vars_factory;
+			namespace vars_show;
+			namespace vars_read;
 			
-			vars_factory function pageReload():Object
+			vars_show function pageReload():Object
 			{
 				return {ignoreCache: pageReloadIgnoreCacheCheckBox.selected};
 			}
-			
-			vars_factory function nativeSendKey():Object
+			vars_read function pageReload(vars:Object):void
 			{
+				pageReloadIgnoreCacheCheckBox.selected = vars.ignoreCache;
+			}
+			
+			
+			vars_show function tabSelect():Object
+			{
+				return {
+					origin: XML(tabSelectOriginComboBox.selectedItem).@value,
+					offset: tabSelectCountInput.value * (tabSelectAddRadioButton.selected ? +1 : -1)
+				};
+			}
+			vars_read function tabSelect(vars:Object):void
+			{
+				var i:int = 0;
+				switch(vars.origin) {
+				case "CUR": i = 0; break;
+				case "SET": i = 1; break;
+				case "END": i = 2; break;
+				}
+				tabSelectOriginComboBox.selectedIndex = i;
+				tabSelectAddRadioButton.selected = vars.offset > 0;
+				tabSelectSubRadioButton.selected = vars.offset < 0;
+				tabSelectCountInput.value = Math.abs(vars.offset);
+			}
+			
+			
+			vars_show function nativeSendKey():Object
+			{
+				
 				if(!KeyCode.nameOf(nativeSendKeyKeyCode)) {
-					throw new NtgDialogBoxError("キーが不正です");
+					throw new NtgDialogBoxError("正しくキーが入力されていません！");
 				}
 				var modifierKeys:int = 0;
 				if(nativeSendKeyWithShiftCheckBox.selected) {
@@ -93,15 +128,70 @@
 					modifierKeys |= 4;
 				}
 				return {
-					keyCode: nativeSendKeyKeyCode,
+					     keyCode: nativeSendKeyKeyCode,
 					modifierKeys: modifierKeys
 				};
 			}
-			
-			vars_factory function nativeRunJavaScript():Object
+			vars_read function nativeSendKey(vars:Object):void
 			{
-				return {};
-			}		
+
+				nativeSendKeyKeyCodeInput.dispatchEvent(
+					new KeyboardEvent(KeyboardEvent.KEY_DOWN, true, false, 0, vars.keyCode));
+
+				var modifierKeys:int = vars.modifierKeys;
+				nativeSendKeyWithShiftCheckBox.selected = !!(modifierKeys & 1);
+				nativeSendKeyWithCtrlCheckBox.selected  = !!(modifierKeys & 2);
+				nativeSendKeyWithAltCheckBox.selected   = !!(modifierKeys & 4);
+			}
+			
+			
+			vars_show function nativeEvalJavaScript():Object
+			{
+				return {
+					    script: nativeEvalJavaScriptScriptInput.text,
+					background: nativeEvalJavaScriptBackgroundCheckbox.selected
+				};
+			}
+			vars_read function nativeEvalJavaScript(vars:Object):void
+			{
+				nativeEvalJavaScriptScriptInput.text = vars.script;
+				nativeEvalJavaScriptBackgroundCheckbox.selectedField = vars.background;
+			}
+			
+			
+			vars_show function nativeCommand():Object
+			{
+				return {
+					   fileName: nativeCommandFileNameInput.text,
+					commandLine: nativeCommandCommandLineInput.text
+				};
+			}
+			vars_read function nativeCommand(vars:Object):void
+			{
+				nativeCommandFileNameInput.text    = vars.fileName;
+				nativeCommandCommandLineInput.text = vars.commandLine;
+			}
+			
+			
+			vars_show function ntgTemporarilyInvalidateGesture():Object
+			{
+				return { time: ntgTemporarilyInvalidateGestureTimeInput.value };
+			}
+			vars_read function ntgTemporarilyInvalidateGesture(vars:Object):void
+			{
+				ntgTemporarilyInvalidateGestureTimeInput.value = vars.time;
+			}
+			
+			
+			vars_show function ntgWait():Object
+			{
+				return { time: ntgWaitTimeInput.value };
+			}
+			vars_read function ntgWait(vars:Object):void
+			{
+				ntgWaitTimeInput.value = vars.time;
+			}
+
 		]]>
 	</mx:Script>
 	<mx:XMLList id="actionList">
@@ -110,26 +200,29 @@
 
 		<item label="--- Webページ ---" title="yes" />
 		<item label="再読み込み" id="pageReload" pane="true" />
-		<item label="読み込みを中止" id="pageStop" />
 		<item label="進む" id="pageForward" />
 		<item label="戻る" id="pageBack" />
+		<item label="先頭にスクロール" id="pageScrollToHead" />
+		<item label="末尾にスクロール" id="pageScrollToFoot" />
 		
 		<item label="--- タブ ---" title="yes" />
-		<item label="アクティブなタブを閉じる" id="tabClose" />
-		<item label="左側のタブを全て閉じる" id="tabCloseLeftSide" />
-		<item label="右側のタブを全て閉じる" id="tabCloseRightSide" />
+		<item label="タブを作成" id="tabNew" />
+		<item label="タブを選択" id="tabSelect" pane="true" />
+		<item label="アクティブなタブを閉じる" id="tabClose" />		
 		
 		<item label="--- ウィンドウ ---" title="yes" />
 		<item label="ウィンドウを閉じる" id="windowClose" />
+		<item label="フルスクリーンモード切り替え" id="windowFullScreen" />
 		
 		<item label="--- 高度な設定 ---" title="yes" />
 		<item label="キーを送る" id="nativeSendKey" pane="true" />
-		<item label="JavaScriptを実行" id="nativeRunJavaScript" pane="true" />
+		<item label="JavaScriptを実行" id="nativeEvalJavaScript" pane="true" />
 		<item label="外部コマンド呼出し" id="nativeCommand" pane="true" />
 		
-		<item label="--- その他 ---" title="yes" />
-		<item label="一時的にジェスチャーを無効化" id="nativePreventGesture" />
-		<item label="スリープ" id="otherSleep" />
+		<item label="--- NTgesture ---" title="yes" />
+		<item label="一時的にジェスチャーを無効化" id="ntgTemporarilyInvalidateGesture" pane="true" />
+		<item label="ウェイト" id="ntgWait" pane="true" />
+
 	</mx:XMLList>
 
 	<mx:Label x="10" y="10" text="アクションの種類:"/>
@@ -138,16 +231,37 @@
 		change="_updateActionPropertyPane()"
 		itemRenderer="ntg.ui.editActionClasses.NtgActionIdComboBoxItemRenderer" />
 	
-	<mx:ViewStack x="10" y="36" id="actionPropertyPane" width="361" height="184" borderStyle="solid">
+	<mx:ViewStack x="10" y="36" id="actionPropertyPane" width="361" height="184" borderStyle="solid" cornerRadius="5">
 		<mx:Canvas width="100%" height="100%" />
-		<mx:Canvas label="" width="100%" height="100%">
-			<mx:Label x="10" y="10" text="無効にする時間(秒):"/>
-			<mx:NumericStepper x="116" y="8" minimum="1" value="1"/>
-		</mx:Canvas>
 		<mx:Canvas label="" width="100%" height="100%">
 		</mx:Canvas>
 		<mx:Canvas name="pageReload" width="100%" height="100%">
 			<mx:CheckBox id="pageReloadIgnoreCacheCheckBox" x="10" y="10" label="キャッシュを無視"/>
+		</mx:Canvas>
+		<mx:Canvas name="tabSelect" width="100%" height="100%">
+			<mx:ComboBox id="tabSelectOriginComboBox"
+				x="10" verticalCenter="0" labelField="@label">
+				
+				<mx:dataProvider>
+					<mx:XMLList>
+						<item label="現在のタブ" value="CUR" />
+						<item label="左端" value="SET" />
+						<item label="右端" value="END" />
+					</mx:XMLList>
+				</mx:dataProvider>
+			</mx:ComboBox>
+			<mx:Text x="114" verticalCenter="0" text="から見て、"/>
+			
+			<mx:VBox x="171" verticalCenter="0">
+				<mx:RadioButtonGroup id="tabSelectRadioGroup"/>
+				<mx:RadioButton id="tabSelectSubRadioButton" label="左" groupName="tabSelectRadioGroup"/>
+				<mx:RadioButton id="tabSelectAddRadioButton" label="右" groupName="tabSelectRadioGroup"/>
+			</mx:VBox>
+			<mx:Text x="214" text="側の" verticalCenter="0"/>
+			
+			<mx:NumericStepper id="tabSelectCountInput" x="247" verticalCenter="0" minimum="1" value="1"/>
+			<mx:Text x="247" y="110" text="番目のタブを選択する"/>
+		
 		</mx:Canvas>
 		<mx:Canvas name="nativeSendKey" width="100%" height="100%">
 			
@@ -185,20 +299,33 @@
 			<mx:Label x="19" y="42" text="修飾キー:"/>
 
 		</mx:Canvas>
-		<mx:Canvas name="nativeRunJavaScript" width="100%" height="100%">
-			<mx:TextArea x="10" y="36" width="339" height="110"/>
+		<mx:Canvas name="nativeEvalJavaScript" width="100%" height="100%">
+			
 			<mx:Label x="10" y="10" text="JavaScriptを入力してください:"/>
-			<mx:CheckBox x="10" y="152" label="バックグラウンドで実行(非推奨)"/>
+			<mx:TextArea id="nativeEvalJavaScriptScriptInput"
+				x="10" y="36" width="339" height="110"/>
+			<mx:CheckBox id="nativeEvalJavaScriptBackgroundCheckbox"
+				x="10" y="152" label="バックグラウンドで実行(非推奨)"/>
 		</mx:Canvas>
 		<mx:Canvas name="nativeCommand" width="100%" height="100%">
 			<mx:Form x="0" y="0">
 				<mx:FormItem label="実行ファイル(絶対パス)">
-					<mx:TextInput/>
+					<mx:TextInput id="nativeCommandFileNameInput"/>
 				</mx:FormItem>
-				<mx:FormItem label="コマンドラインオプション">
-					<mx:TextInput/>
+				<mx:FormItem label="コマンドライン">
+					<mx:TextInput id="nativeCommandCommandLineInput"/>
 				</mx:FormItem>
 			</mx:Form>
+		</mx:Canvas>
+		<mx:Canvas name="ntgTemporarilyInvalidateGesture" width="100%" height="100%">
+			<mx:Label x="10" y="10" text="無効にする時間(秒):"/>
+			<mx:NumericStepper id="ntgTemporarilyInvalidateGestureTimeInput"
+				x="116" y="8" minimum="1" value="1"/>
+		</mx:Canvas>
+		<mx:Canvas name="ntgWait" width="100%" height="100%">
+			<mx:Label x="10" y="10" text="ウェイト(ミリ秒):"/>
+			<mx:NumericStepper id="ntgWaitTimeInput"
+				x="92" y="8" minimum="0" value="500"/>
 		</mx:Canvas>
 	</mx:ViewStack>
 	

@@ -8,13 +8,13 @@ package ntg.settingModelClasses
 		
 		public static const  kTypeMouseGesture:String =  "mouse";
 		public static const kTypeRockerGesture:String = "rocker";
-		//public static const  kTypeWheelGesture:String =  "wheel";
+		public static const  kTypeWheelGesture:String =  "wheel";
 		
 		private var _handlerName:String;
 		
 		private var _gestureType:String;
 		
-		private var _gestureInput:NtgGestureInput;
+		private var _gestureKey:NtgGestureKey;
 		
 		private var _actions:Array = [];
 		
@@ -43,13 +43,13 @@ package ntg.settingModelClasses
 			_gestureType = gestureType;
 		}
 
-		public function get gestureInput():NtgGestureInput
+		public function get gestureKey():NtgGestureKey
 		{
-			return _gestureInput;
+			return _gestureKey;
 		}
-		public function set gestureInput(gestureInput:NtgGestureInput):void
+		public function set gestureKey(gestureKey:NtgGestureKey):void
 		{
-			_gestureInput = gestureInput;
+			_gestureKey = gestureKey;
 		}
 		
 		public function get actions():Array
@@ -72,7 +72,7 @@ package ntg.settingModelClasses
 		
 		public function get gestureSummary():String
 		{
-			return _gestureInput.gestureSummary;
+			return _gestureKey.gestureSummary;
 		}
 		
 		public function get actionSummary():String

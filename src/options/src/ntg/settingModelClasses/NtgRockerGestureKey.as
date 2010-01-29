@@ -1,12 +1,12 @@
 package ntg.settingModelClasses
 {
 
-	public class NtgRockerGestureInput extends NtgGestureInput
+	public class NtgRockerGestureKey extends NtgGestureKey
 	{
 		
 		private var _isLeftToRight:Boolean;
 
-		public function NtgRockerGestureInput()
+		public function NtgRockerGestureKey()
 		{
 			super();
 		}

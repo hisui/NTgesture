@@ -393,9 +393,6 @@ namespace
 				"", 0, 0, 0, 0, 0, NULL, NULL, ::GetModuleHandle(NULL), NULL);
 			
 			::SetWindowLongPtr(_hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-			
-			// ntghk に通知
-			setDaemonHandle(_hWnd);
 		}
 		
 		~DaemonWindow()
@@ -422,27 +419,27 @@ namespace
 				return 0;
 				
 			case ntg::WM_MGESTUREBEGIN:
-				//debugPrint("DaemonWindow.onMessage: WM_GESTUREBEGIN");
 				_tracerWindow.show(HWND(wp));
 				_tracerWindow.addArrow(int(lp));
 				ntg::fireMouseGestureBegin();
 				return 0;
 				
 			case ntg::WM_MGESTUREEND:
-				//debugPrint("DaemonWindow.onMessage: WM_GESTUREEND");
 				_tracerWindow.hide();
 				ntg::fireMouseGestureEnd(uint32_t(wp), HWND(lp));
 				return 0;
 				
 			case ntg::WM_MGESTUREPROGRESS:
 				_tracerWindow.addArrow(int(wp));
-				//debugPrint("DaemonWindow.onMessage: WM_GESTUREPROGRESS");
 				ntg::fireMouseGestureProgress();
 				return 0;
 				
 			case ntg::WM_RGESTUREEND:
-				//debugPrint("DaemonWindow.onMessage: WM_GESTUREPROGRESS");
 				ntg::fireRockerGestureEnd(wp == 0, HWND(lp));
+				return 0;
+				
+			case ntg::WM_WGESTUREEND:
+				ntg::fireWheelGestureEnd(wp == 0, HWND(lp));
 				return 0;
 			}
 			return ::DefWindowProc( hWnd, msg, wp, lp );
@@ -494,7 +491,8 @@ namespace
 		TracerWindow tracerWindow;
 		DaemonWindow daemonWindow(tracerWindow);
 		
-		setDaemonHandle(daemonWindow.getHandle());
+		// ntghk に通知
+		ntghk_setDaemonHandle(daemonWindow.getHandle());
 		
 		MSG msg;
 		while(::GetMessage( &msg, NULL, 0, 0 ) > 0) {
@@ -515,8 +513,8 @@ namespace ntg
 	{
 		if(!_hookInstalled) {
 			_hookInstalled = true;
-			setProcessName("chrome.exe", 10);
-			installHook();
+			ntghk_setProcessName("chrome.exe", 10);
+			ntghk_installHook();
 			
 			_beginthreadex(NULL, 0,
 				reinterpret_cast<unsigned (__stdcall*)(void*)>(&ThreadProc), 0, 0, NULL);
@@ -526,10 +524,10 @@ namespace ntg
 	void stopDaemon()
 	{
 		if(_hookInstalled) {
-			uninstallHook();
+			ntghk_uninstallHook();
 			_hookInstalled = false;
 			
-			
+			// TODO:ここでスレッドにjoin
 		}
 	}
 

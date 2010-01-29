@@ -11,6 +11,8 @@ namespace ntg
 	void fireMouseGestureProgress();
 
 	void fireRockerGestureEnd(bool isLeft, HWND hWnd);
+	
+	void fireWheelGestureEnd(bool isUp, HWND hWnd);
 }
 
 #endif

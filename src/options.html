@@ -26,12 +26,32 @@
 			}
 		}
 		if(query["store"] == "yes") {
-			//var config = JSON.parse(query["config"]);
-			//var bg = chrome.extension.getBackgroundPage();
-			//bg.updateConfig(config);
+			var bg = chrome.extension.getBackgroundPage();
+			if(query["reset"] == "yes") {
+				alert("RESET!");
+				bg.updateConfig(null, true);
+				document.write(
+					  "<h1>設定を初期化しました！</h1>"
+					+ "<p>引き続き設定を行うには、ブラウザの「戻る」をクリックしてください。</p>");
+				return;
+			}
+			var config;
+			try {
+				config = JSON.parse(query["config"]);
+			} catch(e) {
+			}
+			if(!config) {
+				document.write(
+					  "<h1>内部エラー</h1>"
+					+ "<p>設定の保存に失敗しました。</p>"
+					+ "<pre>"+ query["config"] +"</pre>");
+				return;
+			}
+			bg.updateConfig(config, true);
 			document.write(
 				  "<h1>設定は保存されました！</h1>"
-				+ "<p>引き続き設定を行うには、ブラウザの「戻る」をクリックしてください。</p>");
+				+ "<p>引き続き設定を行うには、ブラウザの「戻る」をクリックしてください。</p>"
+				+ "<pre>"+ query["config"] +"<pre>");
 			return;
 		}
 	}
@@ -61,7 +81,7 @@
 
 	document.write("<div id='NTGContainer'></div>");
 
-	swfobject.embedSWF("ntg.swf", "NTGContainerInner", "500", "530",
+	swfobject.embedSWF("options.swf", "NTGContainer", "500", "530",
 		"10.0.0", "images/expressInstall.swf", flashVars, params, { name: "ntgSWF", id: "ntgSWF" });
 
 </script>

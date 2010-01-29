@@ -10,15 +10,15 @@
 			//-----------------------------------------
 			
 		
-			// 設定ね
-			var Config =
+			// デフォ設定
+			var DefaultConfig =
 			{
 			
 				// マウスジェスチャー有効
 				isMouseGestureEnabled: true,
 				
 				// ロッカージェスチャー有効
-				isLockerGestureEnabled: true,
+				isRockerGestureEnabled: true,
 				
 				// ホイールジェスチャー有効
 				isWheelGestureEnabled: true,
@@ -39,7 +39,7 @@
 				handlers:
 				{
 					"default": {
-						    type: "",				
+						    type: "always",				
 						mappings:
 						{
 
@@ -52,23 +52,41 @@
 							 "W": {type: "mouse" , actions:[{id: "pageBack"}]},
 							 "E": {type: "mouse" , actions:[{id: "pageForward"}]},
 							 "R": {type: "rocker", actions:[{id: "tabSelect", vars: {origin: "CUR", offset: +1}}]},
-							 "L": {type: "rocker", actions:[{id: "tabSelect", vars: {origin: "CUR", offset: -1}}]}
+							 "L": {type: "rocker", actions:[{id: "tabSelect", vars: {origin: "CUR", offset: -1}}]},
+							 "U": {type: "wheel" , actions:[{id: "tabSelect", vars: {origin: "CUR", offset: -1}}]},
+							 "D": {type: "wheel" , actions:[{id: "tabSelect", vars: {origin: "CUR", offset: +1}}]}
+						}
+					},
+					"youtube": {
+						    type: "URLMatch",
+							vars:
+						{
+							   pattern: "youtube\\.com/.*?\\?\\bv=",
+							  isRegExp: true,
+							ignoreCase: true
+						},
+						mappings:
+						{
+							"NS": {type: "mouse" , actions:[{id: "pageReload", vars: {ignoreCache: true}}]}
 						}
 					}
 				}
 			};
+			
+			
+			// 設定ね
+			var Config = DefaultConfig;
+		
 		
 		
 			// 利用可能なアクションのセット。外出しの予定
 			var Actions =
 			{
-
-				// アクティブウィンドウにキーを送る
-				nativeSendKey: function (ntg, tab, vars)
-				{
-					ntg.sendKey(vars.keyCode, vars.modifierKeys);
-				},
-				
+			
+				//--------------------------------------------
+				// Webページ操作（？）
+				//--------------------------------------------
+			
 				// 現在のページをリロード
 				pageReload: function (ntg, tab, vars)
 				{
@@ -83,7 +101,7 @@
 				pageBack: function (ntg, tab, vars)
 				{
 					if(Config.useShortcutKey) {
-						ntg.sendKey(VK_BACK, 0);
+						ntg.sendKey(VK_LEFT, 4);
 						return;
 					}
 					chrome.tabs.executeScript(tab.id, {code: "history.back();"});
@@ -92,6 +110,10 @@
 				// ページを進む
 				pageForward: function (ntg, tab, vars)
 				{
+					if(Config.useShortcutKey) {
+						ntg.sendKey(VK_RIGHT, 4);
+						return;
+					}
 					chrome.tabs.executeScript(tab.id, {code: "history.forward();"});
 				},
 				
@@ -106,6 +128,11 @@
 				{
 					ntg.sendKey(VK_END, 0);
 				},
+				
+				
+				//--------------------------------------------
+				// タブ関係
+				//--------------------------------------------
 				
 				// 新しくタブを作る
 				tabNew: function (ntg, tab, vars)
@@ -147,7 +174,72 @@
 						}
 						chrome.tabs.update(tabs[offset].id, {selected: true});
 					});
+				},
+				
+				
+				//--------------------------------------------
+				// ウィンドウ関係
+				//--------------------------------------------
+				
+				// ウィンドウを閉じる
+				windowClose: function (ntg, tab, vars)
+				{
+					chrome.windows.getCurrent(function (window)
+					{
+						chrome.windows.remove(window.id);
+					});
+				},
+				
+				// フルスクリーンモード
+				windowFullScreen: function (ntg, tab, vars)
+				{
+					ntg.sendKey(VK_F11, 0);
+				},
+				
+				
+				//--------------------------------------------
+				// ネイティブな機能（意味不明）
+				//--------------------------------------------
+
+				// アクティブウィンドウにキーを送る
+				nativeSendKey: function (ntg, tab, vars)
+				{
+					ntg.sendKey(vars.keyCode, vars.modifierKeys);
+				},
+
+				// JavaScriptを実行
+				nativeEvalJavaScript: function (ntg, tab, vars)
+				{
+					if(vars.background) {
+						try {
+							eval(vars.script);
+						} catch(e) {}
+						return;
+					}
+					chrome.tabs.executeScript(tab.id, {code: vars.script});
+				},
+
+				// 外部コマンドを実行
+				nativeCommand: function (ntg, tab, vars)
+				{
+					ntg.createProcess(vars.fileName, vars.commandLine);
 				}
+				
+				
+				//--------------------------------------------
+				// NTG制御
+				//--------------------------------------------
+
+				// 一時的にジェスチャーを無効化(THE 適当)
+				ntgTemporarilyInvalidateGesture: function (ntg, tab, vars)
+				{
+					ntg.sendKey(vars.keyCode, vars.modifierKeys);
+				},
+
+
+				// 前のアクションと次のアクションの間にウェイト(ダミー)
+				ntgWait: null
+				
 			};
 			
 
@@ -176,8 +268,14 @@
 				rockerGestureEnd: function (isLeft)
 				{
 					runAction(isLeft ? "L" : "R");		
+				},
+				
+				// ホイールジェスチャーの終了を通知(これも適当)
+				wheelGestureEnd: function (isUp)
+				{
+					//console.log("wheelGestureEnd: isUp="+ isUp);
+					runAction(isUp ? "U" : "D");
 				}
-
 			};
 			
 			
@@ -219,6 +317,11 @@
 			{
 				for(var i in actions) {
 					var action = actions[i];
+					if(action.id == "ntgWait") {
+						// <(^_^;)
+						setTimeout(arguments.callee, 1000 * action.vars.time, actions.slice(i + 1), tab);
+						break;
+					}
 					Actions[action.id](
 						NTG, tab, action.hasOwnProperty("vars") ? action.vars : null);
 				}
@@ -277,13 +380,13 @@
 			function onLoad()
 			{
 
+				NTG = document.getElementById("ntg");
+
 				var config = localStorage["Config"];
 				if(config && (config = JSON.parse(config))) {
 					Config = config;
 				}
-				readConfig(config);
-				
-				NTG = document.getElementById("NTG");
+				readConfig(Config);
 
 				//NTG.install();
 				NTG.setGestureListener(GestureListener);				
@@ -293,22 +396,30 @@
 			// 設定を保存する(options.htmlから呼び出される予定)
 			function updateConfig(config, store)
 			{
-				Config = config;
-				readConfig(config);
+				Config = config || DefaultConfig;
+				readConfig(Config);
 				if(store) {
-					localStorage["Config"] = JSON.stringify(config);
+					localStorage["Config"] = JSON.stringify(Config);
 				}
 			}
 			
 			
-			//
+			// 設定を適用する
 			function readConfig(config)
 			{
 				
-				//var NTG = document.getElementById("NTG");
+				var gestureMask = 0;
+				if(config.isMouseGestureEnabled) {
+					gestureMask |= 1;
+				}
+				if(config.isRockerGestureEnabled) {
+					gestureMask |= 2;
+				}
+				if(config.isWheelGestureEnabled) {
+					gestureMask |= 4;
+				}
 				
-				//NTG.setMouseGestureEnabled(config.isMouseGestureEnabled);
-				//NTG.setLockerGestureEnabled(config.isLockerGestureEnabled);
+				NTG.setGestureMask(gestureMask);
 			}
 			
 			
@@ -343,6 +454,6 @@
 		</script>
 	</head>
 	<body onload="onLoad()">
-		<object id="NTG" type="application/x-NTG-plugin" hidden="true">OMG</object>
+		<object id="ntg" type="application/x-ntg-plugin" hidden="true">OMG</object>
 	</body>
 </html>

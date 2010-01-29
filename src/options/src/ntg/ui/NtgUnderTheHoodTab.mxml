@@ -2,7 +2,8 @@
 <ntg:NtgTabContent
 	xmlns:mx="http://www.adobe.com/2006/mxml"
 	xmlns:ntg="ntg.ui.*"
-	width="498" height="467">
+	width="498" height="467"
+	enabled="false">
 
 	<mx:Script>
 		<![CDATA[

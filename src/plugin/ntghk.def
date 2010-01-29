@@ -1,7 +1,8 @@
 LIBRARY ntghk.dll
 
 EXPORTS
-	installHook     @1
-	uninstallHook   @2
-	setProcessName  @3
-	setDaemonHandle @4
+	ntghk_installHook     @1
+	ntghk_uninstallHook   @2
+	ntghk_setProcessName  @3
+	ntghk_setDaemonHandle @4
+	ntghk_setGestureMask  @5

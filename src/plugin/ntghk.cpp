@@ -21,6 +21,15 @@ namespace shared
 	// _gTargetProcessExeName の大きさ
 	size_t processNameLength = 0;
 
+	// マウスジェスチャー有効
+	bool isMouseGestureEnabled = true;
+	
+	// ロッカージェスチャー有効
+	bool isRockerGestureEnabled = true;
+
+	// ホイールジェスチャー有効
+	bool isWheelGestureEnabled = true;
+
 #pragma data_seg()
 #pragma comment(linker, "/SECTION:.shared,RWS")
 }
@@ -116,12 +125,23 @@ namespace
 		}
 	}
 	
+	
 	// ロッカージェスチャーを通知
 	void notifyRockerGestureEnd(bool isLeft, HWND hWnd)
 	{
 		//debugPrint("notifyRockerGestureEnd: called! daemonWnd="+ string_cast(shared::daemonWnd));
 		if(shared::daemonWnd) {
 			::PostMessage(shared::daemonWnd, ntg::WM_RGESTUREEND, (isLeft ? 0 : 1), LPARAM(hWnd));
+		}
+	}
+	
+	
+	// ホイールジェスチャーを通知
+	void notifyWheelGestureEnd(bool isUp, HWND hWnd)
+	{
+		//debugPrint("notifyRockerGestureEnd: called! daemonWnd="+ string_cast(shared::daemonWnd));
+		if(shared::daemonWnd) {
+			::PostMessage(shared::daemonWnd, ntg::WM_WGESTUREEND, (isUp ? 0 : 1), LPARAM(hWnd));
 		}
 	}
 
@@ -212,13 +232,13 @@ namespace
 		GestureRecognizer()
 		:mouseGestureActive(false)
 		,rockerGestureActive(false)
+		,wheelGestureActive(false)
 		,isCaptured(false)
-		//,tracerWindow()
 		{}
 		
 		bool isActive() const
 		{
-			return mouseGestureActive || rockerGestureActive;
+			return mouseGestureActive || rockerGestureActive || wheelGestureActive;
 		}
 		
 		void setGestureTarget(HWND hWnd)
@@ -229,7 +249,7 @@ namespace
 		
 		HWND getGestureTarget() const
 		{
-			return mouseGestureTarget;
+			return gestureTarget;
 		}
 		
 		// マウスジェスチャーのセッションを開始する
@@ -244,10 +264,17 @@ namespace
 		// ロッカージェスチャーの（ｒｙ
 		void startRockerGesture(bool isLeft)
 		{
-			rockerGestureActive = true;
+			rockerGestureActive   = true;
+			rockerGestureHasFired = false;
 			isLeftDown  =  isLeft;
 			isRightDown = !isLeft;
-			hasFired = false;
+		}
+		
+		// ホイ（ｒｙ
+		void startWheelGesture()
+		{
+			wheelGestureActive   = true;
+			wheelGestureHasFired = false;
 		}
 		
 		void move(int x, int y)
@@ -277,13 +304,11 @@ namespace
 			if(arrows.add(arrow)) {
 				if(arrows.count == 1) {
 					setCapture();
-					//tracerWindow.show(::GetAncestor(mouseGestureTarget, GA_ROOT));
 					notifyMouseGestureBegin(gestureTarget, int(arrow));
 				}
 				else {
 					notifyMouseGestureProgress(int(arrow));
 				}
-				//tracerWindow.updateDisplay(arrows);
 			}
 		}
 		
@@ -294,9 +319,9 @@ namespace
 			}
 			isLeftDown = false;
 			if(!isRightDown) {
-				setInactiveRockerGesture();
+				setRockerGestureInactive();
 			}
-			return hasFired;
+			return rockerGestureHasFired;
 		}
 		
 		bool rightUp()
@@ -305,14 +330,18 @@ namespace
 			if(rockerGestureActive && isRightDown) {
 				isRightDown = false;
 				if(!isLeftDown) {
-					setInactiveRockerGesture();
+					setRockerGestureInactive();
 				}
-				preventDefault = hasFired;
+				preventDefault = rockerGestureHasFired;
+			}
+			if(wheelGestureActive) {
+				setWheelGestureInactive();
+				preventDefault = preventDefault || wheelGestureHasFired;
 			}
 			if(!mouseGestureActive) {
 				return preventDefault;
 			}
-			setInactiveMouseGesture();
+			setMouseGestureInactive();
 			//tracerWindow.hide();
 			if(!arrows.count) {
 				notifyMouseGestureEnd(Arrows::kEmpty, 0);
@@ -328,8 +357,8 @@ namespace
 			if(!rockerGestureActive || isLeftDown) {
 				return false;
 			}
-			if(!hasFired) {
-				hasFired = true;
+			if(!rockerGestureHasFired) {
+				rockerGestureHasFired = true;
 				setCapture();
 			}
 			isLeftDown = true;
@@ -342,12 +371,38 @@ namespace
 			if(!rockerGestureActive || isRightDown) {
 				return false;
 			}
-			if(!hasFired) {
-				hasFired = true;
+			if(!rockerGestureHasFired) {
+				rockerGestureHasFired = true;
 				setCapture();
 			}
 			isRightDown = true;
 			notifyRockerGestureEnd(false, gestureTarget);
+			return true;
+		}
+		
+		bool wheelUp()
+		{
+			if(!wheelGestureActive) {
+				return false;
+			}
+			if(!wheelGestureHasFired) {
+				wheelGestureHasFired = true;
+				setCapture();
+			}
+			notifyWheelGestureEnd(true, gestureTarget);
+			return true;
+		}
+		
+		bool wheelDown()
+		{
+			if(!wheelGestureActive) {
+				return false;
+			}
+			if(!wheelGestureHasFired) {
+				wheelGestureHasFired = true;
+				setCapture();
+			}
+			notifyWheelGestureEnd(false, gestureTarget);
 			return true;
 		}
 
@@ -361,15 +416,21 @@ namespace
 			}
 		}
 	
-		void setInactiveRockerGesture()
+		void setRockerGestureInactive()
 		{
 			rockerGestureActive = false;
 			inactivate();
 		}
 	
-		void setInactiveMouseGesture()
+		void setMouseGestureInactive()
 		{
 			mouseGestureActive = false;
+			inactivate();
+		}
+		
+		void setWheelGestureInactive()
+		{
+			wheelGestureActive = false;
 			inactivate();
 		}
 		
@@ -385,20 +446,20 @@ namespace
 		}
 
 		bool mouseGestureActive;
-		HWND mouseGestureTarget;
 		int origX;
 		int origY;
 		Arrows arrows;
 		
 		bool rockerGestureActive;
-		HWND rockerGestureTarget;
+		bool rockerGestureHasFired;
 		bool isLeftDown;
 		bool isRightDown;
-		bool hasFired;
+		
+		bool wheelGestureActive;
+		bool wheelGestureHasFired;
 		
 		HWND gestureTarget;
 		bool isCaptured;
-		//TracerWindow tracerWindow;
 
 	};
 
@@ -425,7 +486,18 @@ namespace
 		switch(msg) {
 		case WM_MOUSEMOVE:
 			_recognizer.move(mouseHook.pt.x, mouseHook.pt.y);
-			return false;
+			break;
+			
+		case WM_MOUSEWHEEL: {
+				int delta = HIWORD(reinterpret_cast<MOUSEHOOKSTRUCTEX&>(mouseHook).mouseData);
+				if(delta & 0x8000) {
+					delta |= -1 << 0x10;
+				}
+				if(-WHEEL_DELTA < delta && delta < WHEEL_DELTA) {
+					break;
+				}
+				return delta > 0 ? _recognizer.wheelUp() : _recognizer.wheelDown() ;
+			}
 
 		case   WM_LBUTTONUP: return _recognizer.leftUp();
 		case   WM_RBUTTONUP: return _recognizer.rightUp();
@@ -481,9 +553,12 @@ namespace
 			
 			bool isLeft = wParam == WM_LBUTTONDOWN;
 			if(!isLeft) {
-				_recognizer.startMouseGesture(mouseHook->pt.x, mouseHook->pt.y);
+				if(shared::isMouseGestureEnabled) _recognizer.startMouseGesture(mouseHook->pt.x, mouseHook->pt.y);
+				if(shared::isWheelGestureEnabled) _recognizer.startWheelGesture();
 			}
-			_recognizer.startRockerGesture(isLeft);
+			if(shared::isRockerGestureEnabled) {
+				_recognizer.startRockerGesture(isLeft);
+			}
 			
 			//debugPrint("MouseProc: initialized. pid="+ string_cast(::GetCurrentProcessId()) +", id="+ string_cast((unsigned)_hInstance));
 			
@@ -514,7 +589,7 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD fdwReason, LPVOID lpvReserved)
 }
 
 
-int WINAPI installHook()
+int WINAPI ntghk_installHook()
 {
 	if(!_hHook) {
 		_hHook = ::SetWindowsHookEx(WH_MOUSE, MouseProc, _hInstance, 0);
@@ -526,7 +601,16 @@ int WINAPI installHook()
 }
 
 
-int WINAPI setProcessName(const char *name, size_t len)
+void WINAPI ntghk_uninstallHook()
+{
+	if(_hHook) {
+		::UnhookWindowsHookEx(_hHook);
+		_hHook = 0;
+	}
+}
+
+
+int WINAPI ntghk_setProcessName(const char *name, size_t len)
 {
 	debugPrint("setProcessName: name="+ std::string(name, len));
 	if(len == 0 || len > sizeof(shared::processName)) {
@@ -538,18 +622,17 @@ int WINAPI setProcessName(const char *name, size_t len)
 }
 
 
-void WINAPI uninstallHook()
-{
-	if(_hHook) {
-		::UnhookWindowsHookEx(_hHook);
-		_hHook = 0;
-	}
-}
-
-
-void WINAPI setDaemonHandle(HWND hWnd)
+void WINAPI ntghk_setDaemonHandle(HWND hWnd)
 {
 	debugPrint("setDaemonHandle: hWnd="+ string_cast((unsigned)hWnd));
 	shared::daemonWnd = hWnd;
+}
+
+
+void WINAPI ntghk_setGestureMask(int mask)
+{
+	shared::isMouseGestureEnabled  = !!(mask & 1);
+	shared::isRockerGestureEnabled = !!(mask & 2);
+	shared::isWheelGestureEnabled  = !!(mask & 4);
 }
 

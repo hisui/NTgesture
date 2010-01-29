@@ -2,6 +2,7 @@
 #include "npp.h"
 #include "nppScriptableObject.h"
 #include "ntg32.h"
+#include "ntghk.h" // 本当はここでインクルードしたくない。ntghkへの操作はdaemonにカプセル化すること！
 #include <map>
 
 namespace
@@ -56,6 +57,7 @@ public:
 			_ADD_SO_METHOD(setGestureListener);
 			_ADD_SO_METHOD(postMessage);
 			_ADD_SO_METHOD(sendKey);
+			_ADD_SO_METHOD(setGestureMask);
 			
 			#undef _ADD_SO_METHOD
 		}
@@ -97,7 +99,7 @@ public:
 
 	void fireMouseGestureBegin()
 	{
-		static NPIdentifier kIdMouseGestureBegin = gNPNFuncs->getstringidentifier("mouseGestureBegin");
+		static const NPIdentifier kIdMouseGestureBegin = gNPNFuncs->getstringidentifier("mouseGestureBegin");
 		if(_gestureListener) {
 			NPVariant result;
 			gNPNFuncs->invoke(_npp, _gestureListener, kIdMouseGestureBegin, 0, 0, &result);
@@ -106,7 +108,7 @@ public:
 
 	void fireMouseGestureEnd(uint32_t arrows, HWND hWnd)
 	{
-		static NPIdentifier kIdMouseGestureEnd = gNPNFuncs->getstringidentifier("mouseGestureEnd");
+		static const NPIdentifier kIdMouseGestureEnd = gNPNFuncs->getstringidentifier("mouseGestureEnd");
 		_hWnd = hWnd;
 		if(_gestureListener) {
 			NPVariant result;
@@ -121,7 +123,7 @@ public:
 
 	void fireMouseGestureProgress()
 	{
-		static NPIdentifier kIdMouseGestureProgress = gNPNFuncs->getstringidentifier("mouseGestureProgress");
+		static const NPIdentifier kIdMouseGestureProgress = gNPNFuncs->getstringidentifier("mouseGestureProgress");
 		if(_gestureListener) {
 			NPVariant result;
 			gNPNFuncs->invoke(_npp, _gestureListener, kIdMouseGestureProgress, 0, 0, &result);
@@ -130,7 +132,7 @@ public:
 
 	void fireRockerGestureEnd(bool isLeft, HWND hWnd)
 	{
-		static NPIdentifier kIdRockerGestureEnd = gNPNFuncs->getstringidentifier("rockerGestureEnd");
+		static const NPIdentifier kIdRockerGestureEnd = gNPNFuncs->getstringidentifier("rockerGestureEnd");
 		_hWnd = hWnd;
 		if(_gestureListener) {
 			NPVariant result;
@@ -143,7 +145,33 @@ public:
 		}
 	}
 
+	void fireWheelGestureEnd(bool isUp, HWND hWnd)
+	{
+		static const NPIdentifier kIdWheelGestureEnd = gNPNFuncs->getstringidentifier("wheelGestureEnd");
+		_hWnd = hWnd;
+		if(_gestureListener) {
+			NPVariant result;
+			NPVariant args[1];
+			args[0].type = NPVariantType_Bool;
+			args[0].value.boolValue = isUp;
+			
+			gNPNFuncs->invoke(_npp, _gestureListener,
+				kIdWheelGestureEnd, args, sizeof(args) / sizeof(*args), &result);
+		}
+	}
+
 private:
+
+#defien _COERCE_ARGS_X(COUNT, TYPE) && (args[COUNT].type == TYPE)
+#define _COERCE_ARGS_5(TYPE, ...) _COERCE_ARGS_X(4, TYPE) _COERCE_ARGS_4(__VA_ARGS__)
+#define _COERCE_ARGS_4(TYPE, ...) _COERCE_ARGS_X(3, TYPE) _COERCE_ARGS_3(__VA_ARGS__)
+#define _COERCE_ARGS_3(TYPE, ...) _COERCE_ARGS_X(2, TYPE) _COERCE_ARGS_2(__VA_ARGS__)
+#define _COERCE_ARGS_2(TYPE, ...) _COERCE_ARGS_X(1, TYPE) _COERCE_ARGS_1(__VA_ARGS__)
+#define _COERCE_ARGS_1(TYPE)      _COERCE_ARGS_X(0, TYPE)
+#define _COERCE_ARGS_0(COUNT)
+
+// 引数チェケラッチョ
+#define COERCE_ARGS(COUNT, ...) ((COUNT == argCount) && _COERCE_ARGS_#COUNT(__VA_ARGS__))
 
 
 	bool setGestureListener(const NPVariant *args, uint32_t argCount, NPVariant *result)
@@ -224,6 +252,40 @@ private:
 		return true;
 	}
 
+	
+	bool setGestureMask(const NPVariant *args, uint32_t argCount, NPVariant *result)
+	{
+		if(argCount == 1
+			&& args[0].type == NPVariantType_Int32)
+		{
+			ntghk_setGestureMask(args[0].value.intValue);
+		}
+		return true;
+	}
+
+
+	bool createProcess(const NPVariant *args, uint32_t argCount, NPVariant *result)
+	{
+		if(COERCE_ARGS(2, NPVariantType_String, NPVariantType_String)) {
+		
+			STARTUPINFO startUpInfo = {0};
+			PROCESS_INFORMATION processInfo;
+
+			::CreateProcess(
+				args[0].value.stringValue.UTF8Characters,
+				args[1].value.stringValue.UTF8Characters, // __inout なので、ヤバイかもね
+				NULL,
+				NULL,
+				FALSE,
+				CREATE_DEFAULT_ERROR_MODE,
+				NULL,
+				NULL,
+				&startUpInfo,
+				&processInfo
+			);
+		}
+		return true;
+	}
 };
 
 static NPObject *_scriptableObject = 0;
@@ -310,6 +372,13 @@ namespace ntg
 	{
 		if(_scriptableObject) {
 			static_cast<MyScriptableObject*>(_scriptableObject)->fireRockerGestureEnd(isLeft, hWnd);
+		}
+	}
+	
+	void fireWheelGestureEnd(bool isUp, HWND hWnd)
+	{
+		if(_scriptableObject) {
+			static_cast<MyScriptableObject*>(_scriptableObject)->fireWheelGestureEnd(isUp, hWnd);
 		}
 	}
 

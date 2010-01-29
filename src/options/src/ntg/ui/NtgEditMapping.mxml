@@ -6,13 +6,14 @@
 
 	<mx:Script>
 		<![CDATA[
+			import ntg.settingModelClasses.NtgWheelGestureKey;
 		
 			import ntg.events.NtgDialogBoxEvent;
 			import ntg.error.NtgDialogBoxError;
-			import ntg.settingModelClasses.NtgRockerGestureInput;
-			import ntg.settingModelClasses.NtgGestureInput;
+			import ntg.settingModelClasses.NtgRockerGestureKey;
+			import ntg.settingModelClasses.NtgGestureKey;
 			import ntg.settingModelClasses.NtgMapping;
-			import ntg.settingModelClasses.NtgMouseGestureInput;
+			import ntg.settingModelClasses.NtgMouseGestureKey;
 			import ntg.settingModelClasses.NtgAction;
 		
 			import mx.controls.Alert;
@@ -25,7 +26,8 @@
 			
 			private static const _kGestureTypes:Array =
 			[{label: "マウスジェスチャー", type: "mouse"}
-			,{label: "ロッカージェスチャー", type: "rocker"}];
+			,{label: "ロッカージェスチャー", type: "rocker"}
+			,{label: "ホイールジェスチャー", type: "wheel"}];
 			
 			[Bindable]
 			private var _actions:ArrayCollection = new ArrayCollection;
@@ -46,8 +48,8 @@
 				if(i == _kGestureTypes.length) {
 					throw new ArgumentError;
 				}
-				if(mappingModel.gestureInput) {
-					this.gesture_input_read::[mappingModel.gestureType](mappingModel.gestureInput);
+				if(mappingModel.gestureKey) {
+					this.gesture_key_read::[mappingModel.gestureType](mappingModel.gestureKey);
 				}
 				_actions = new ArrayCollection(mappingModel.actions);
 				priorityInput.value = mappingModel.priority;
@@ -88,7 +90,7 @@
 			
 			private function _addArrow(arrow:String):void
 			{
-				if(mouseGestureArrowsInput.text.length == NtgMouseGestureInput.kMaxArrows) {
+				if(mouseGestureArrowsInput.text.length == NtgMouseGestureKey.kMaxArrows) {
 					return;
 				}
 				mouseGestureArrowsInput.text += arrow;
@@ -106,63 +108,76 @@
 
 				mappingModel.handlerName = String(handlerNamesComboBox.selectedItem) || "default";
 				mappingModel.gestureType = gestureType;
-				mappingModel.gestureInput = this.gesture_input_show::[gestureType]();
+				mappingModel.gestureKey = this.gesture_key_show::[gestureType]();
 				mappingModel.actions = _actions.source.concat();
 				mappingModel.priority = ignorePriorityCheckBox.selected ? -1 : priorityInput.value;
 
 				return mappingModel;
 			}
 			
-			namespace gesture_input_show;
+
+			namespace gesture_key_show;
+			namespace gesture_key_read;
 			
-			gesture_input_show function mouse():NtgGestureInput
+			gesture_key_show function mouse():NtgGestureKey
 			{
 				if(mouseGestureArrowsInput.text == "") {
 					throw new NtgDialogBoxError("ジェスチャーを入力してください");
 				}
-				var gestureInput:NtgMouseGestureInput = new NtgMouseGestureInput;
-				gestureInput.arrows = mouseGestureArrowsInput.text
+				var gestureKey:NtgMouseGestureKey = new NtgMouseGestureKey;
+				gestureKey.arrows = mouseGestureArrowsInput.text
 					.replace(/→/g, "E")
 					.replace(/←/g, "W")
 					.replace(/↑/g, "N")
 					.replace(/↓/g, "S")
 					;
-				return gestureInput;
+				return gestureKey;
+			}
+			gesture_key_read function mouse(gestureKey:NtgMouseGestureKey):void
+			{
+				mouseGestureArrowsInput.text = gestureKey.asArrowNotation();
 			}
 
-			gesture_input_show function rocker():NtgGestureInput
-			{
-				var gestureInput:NtgRockerGestureInput = new NtgRockerGestureInput;
-				gestureInput.isLeftToRight = rockerGestureIsLToRRadioButton.selected;
-				return gestureInput;
-			}
-			
-			namespace gesture_input_read;
 
-			gesture_input_read function mouse(gestureInput:NtgMouseGestureInput):void
+			gesture_key_show function rocker():NtgGestureKey
 			{
-				mouseGestureArrowsInput.text = gestureInput.asArrowNotation();
+				var gestureKey:NtgRockerGestureKey = new NtgRockerGestureKey;
+				gestureKey.isLeftToRight = rockerGestureIsLToRRadioButton.selected;
+				return gestureKey;
+			}
+			gesture_key_read function rocker(gestureKey:NtgRockerGestureKey):void
+			{
+				rockerGestureIsLToRRadioButton.selected =  gestureKey.isLeftToRight;
+				rockerGestureIsRToLRadioButton.selected = !gestureKey.isLeftToRight;
 			}
 
-			gesture_input_read function rocker(gestureInput:NtgRockerGestureInput):void
+
+			gesture_key_show function wheel():NtgGestureKey
 			{
-				rockerGestureIsLToRRadioButton.selected =  gestureInput.isLeftToRight;
-				rockerGestureIsRToLRadioButton.selected = !gestureInput.isLeftToRight;
+				var gestureKey:NtgWheelGestureKey = new NtgWheelGestureKey;
+				gestureKey.isUp = wheelGestureIsUpRadioButton.selected;
+				return gestureKey;
 			}
-			
+			gesture_key_read function wheel(gestureKey:NtgWheelGestureKey):void
+			{
+				wheelGestureIsUpRadioButton.selected   =  gestureKey.isUp;
+				wheelGestureIsDownRadioButton.selected = !gestureKey.isUp;
+			}
+
+
 		]]>
 	</mx:Script>
 	
 	<mx:Label x="10" y="12" text="ジェスチャーのタイプ:"/>
 	<mx:ComboBox id="gestureTypeComboBox" x="115" y="10" dataProvider="{_kGestureTypes}" />
 	
-	<mx:ViewStack id="gestureInputSettingPane"
+	<mx:ViewStack id="gestureKeySettingPane"
 		x="10" y="38"
 		width="360" height="80"
 		selectedIndex="{gestureTypeComboBox.selectedIndex}"
-		borderStyle="solid" cornerRadius="8" borderThickness="1" creationPolicy="all">
+		borderStyle="solid" cornerRadius="5" borderThickness="1" creationPolicy="all">
 
-		<mx:Canvas width="100%" height="100%" cornerRadius="3">
+		<mx:Canvas width="100%" height="100%" cornerRadius="0">
 			<mx:Canvas x="10" y="10" width="120" height="60">
 				
 				<mx:Button label="←" left="0" verticalCenter="0"
@@ -197,6 +212,13 @@
 					x="10" y="13" label="左押し→左押し" groupName="rockerGestureRadioButtonGroup" selected="true"/>
 			<mx:RadioButton id="rockerGestureIsRToLRadioButton"
 					x="10" y="39" label="右押し→左押し" groupName="rockerGestureRadioButtonGroup"/>
+		</mx:Canvas>
+		<mx:Canvas width="100%" height="100%">
+			<mx:RadioButtonGroup id="wheelGestureRadioButtonGroup"/>
+			<mx:RadioButton id="wheelGestureIsUpRadioButton"
+					x="10" y="13" label="上" groupName="wheelGestureRadioButtonGroup" selected="true"/>
+			<mx:RadioButton id="wheelGestureIsDownRadioButton"
+					x="10" y="39" label="下" groupName="wheelGestureRadioButtonGroup"/>
 		</mx:Canvas>
 	</mx:ViewStack>
 	

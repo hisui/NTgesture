@@ -44,7 +44,7 @@
 				if(handlersDataGrid.selectedItem) {
 					handlerName = NtgHandler(handlersDataGrid.selectedItem).name;
 				}
-				editMapping.setup(null, _handlerNames, handlerName);
+				editMapping.setup(null, _getHandlerNames(), handlerName);
 				editMapping.addEventListener("OK", function (event:NtgDialogBoxEvent):void
 				{
 					_mappings.addItem(event.result);
@@ -57,7 +57,7 @@
 			{
 				var index:int = mappingsDataGrid.selectedIndex;
 				var editMapping:NtgEditMapping = createPopUp(NtgEditMapping);
-				editMapping.setup(NtgMapping(_mappings.getItemAt(index)), _handlerNames);
+				editMapping.setup(NtgMapping(_mappings.getItemAt(index)), _getHandlerNames());
 				editMapping.addEventListener("OK", function (event:NtgDialogBoxEvent):void
 				{
 					_mappings.setItemAt(event.result, index);
@@ -66,21 +66,21 @@
 			}
 			
 			
+			private function _removeMapping():void
+			{
+				_mappings.removeItemAt(mappingsDataGrid.selectedIndex);
+			}
+			
+			
 			private function _addHandler():void
 			{
 				var editHandler:NtgEditHandler = createPopUp(NtgEditHandler);
-				editHandler.setup(null, _handlerNames);
+				editHandler.setup(null, _getHandlerNames());
 				editHandler.addEventListener("OK", function (event:NtgDialogBoxEvent):void
 				{
 					_handlers.addItem(event.result);
 				});
 				PopUpManager.centerPopUp(editHandler);
-			}
-			
-			
-			private function _removeMapping():void
-			{
-				_mappings.removeItemAt(mappingsDataGrid.selectedIndex);
 			}
 				
 			
@@ -88,10 +88,12 @@
 			{
 				var index:int = handlersDataGrid.selectedIndex;
 				var editHandler:NtgEditHandler = createPopUp(NtgEditHandler);
-				editHandler.setup(NtgHandler(_handlers.getItemAt(index)), []);
+				var handlerModel:NtgHandler = NtgHandler(_handlers.getItemAt(index));
+				
+				editHandler.setup(handlerModel, _getHandlerNames(handlerModel.name));
 				editHandler.addEventListener("OK", function (event:NtgDialogBoxEvent):void
 				{
-					_mappings.setItemAt(event.result, index);
+					_handlers.setItemAt(event.result, index);
 				});
 				PopUpManager.centerPopUp(editHandler);
 			}
@@ -103,11 +105,13 @@
 			}
 			
 			
-			private function get _handlerNames():Array
+			private function _getHandlerNames(exclude:String=null):Array
 			{
 				var a:Array = [];
 				for each(var handler:NtgHandler in _handlers.source) {
-					a.push(handler.name);
+					if(exclude != handler.name) {
+						a.push(handler.name);
+					}
 				}
 				return a;
 			}

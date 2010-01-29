@@ -1,7 +1,7 @@
 package ntg.settingModelClasses
 {
 
-	public class NtgMouseGestureInput extends NtgGestureInput
+	public class NtgMouseGestureKey extends NtgGestureKey
 	{
 		
 		public static const kArrowEast:String  = "E";
@@ -13,7 +13,7 @@ package ntg.settingModelClasses
 
 		private var _arrows:String;
 
-		public function NtgMouseGestureInput()
+		public function NtgMouseGestureKey()
 		{
 			super();
 		}

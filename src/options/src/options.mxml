@@ -71,20 +71,26 @@
 			public function export():Object
 			{
 				var settingModel:NtgSettingRoot = new NtgSettingRoot;
-				//generalTab.export(settingModel);
+				generalTab.export(settingModel);
 				mappingTab.export(settingModel);
 				//underTheHoodTab.export(settingModel);
 				return settingModel.show();
 			}
 			
 			
-			private function finish():void
+			private function _finish():void
 			{
 				var url:String = parameters.href +"?store=yes&config="
 					+ encodeURIComponent(JSONEncoder.encode(export()));
 				
 				// ExternalInterface が使えないんだから仕方ないよね
 				navigateToURL(new URLRequest(url), "_self");
+			}
+			
+			
+			private function _reset():void
+			{
+				navigateToURL(new URLRequest(parameters.href +"?store=yes&reset=yes"), "_self");
 			}
 			
 		]]>
@@ -95,6 +101,7 @@
 		<ntg:NtgUnderTheHoodTab label="詳細"    id="underTheHoodTab"/>
 		<ntg:NtgDebugTab        label="デバッグ"  id="debugTab"/>
 	</mx:TabNavigator>
-	<mx:Button x="369" y="508" label="設定を保存して適用する" click="finish()" height="22"/>
+	<mx:Button x="388" y="508" label="変更を保存して適用" click="_finish()" height="22"/>
+	<mx:Button x="295" y="508" label="設定を初期化" click="_reset()" height="22"/>
 	
 </mx:Application>

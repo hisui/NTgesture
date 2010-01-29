@@ -11,23 +11,43 @@
 
 			public function setup(settingModel:NtgSettingRoot):void
 			{
+				
+				enableMouseGestureCheckBox.selected  = settingModel.isMouseGestureEnabled;
+				enableRockerGestureCheckBox.selected = settingModel.isRockerGestureEnabled;
+				enableWheelGestureCheckBox.selected  = settingModel.isWheelGestureEnabled;
+				
+				useShortcutKeyCheckBox.selected = settingModel.useShortcutKey;
 			}
 			
+			
+			public function export(settingModel:NtgSettingRoot):void
+			{
+				
+				settingModel.isMouseGestureEnabled  = enableMouseGestureCheckBox.selected;
+				settingModel.isRockerGestureEnabled = enableRockerGestureCheckBox.selected;
+				settingModel.isWheelGestureEnabled  = enableWheelGestureCheckBox.selected;
+				
+				settingModel.useShortcutKey = useShortcutKeyCheckBox.selected;
+			}
 			
 		]]>
 	</mx:Script>
 
-	<mx:Form x="10" y="10" borderStyle="solid" cornerRadius="8" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" borderThickness="0">
+	<mx:Form x="10" y="10"
+		borderStyle="solid" cornerRadius="5"
+		paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" width="478">
+		
 		<mx:FormHeading label="各タイプのジェスチャーの有効／無効" fontSize="10"/>
 		<mx:FormItem label="マウスジェスチャー">
-			<mx:CheckBox label="有効"/>
+			<mx:CheckBox id="enableMouseGestureCheckBox" label="有効"/>
 		</mx:FormItem>
 		<mx:FormItem label="ロッカージェスチャー">
-			<mx:CheckBox label="有効"/>
+			<mx:CheckBox id="enableRockerGestureCheckBox" label="有効"/>
 		</mx:FormItem>
 		<mx:FormItem label="ホイールジェスチャー">
-			<mx:CheckBox label="有効"/>
+			<mx:CheckBox id="enableWheelGestureCheckBox" label="有効"/>
 		</mx:FormItem>
 	</mx:Form>
+	<mx:CheckBox id="useShortcutKeyCheckBox" x="10" y="132" label="「更新」や「戻る」などのアクションをショートカットキーによって実行"/>
 
 </ntg:NtgTabContent>
