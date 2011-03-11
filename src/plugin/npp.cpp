@@ -191,9 +191,9 @@ private:
 		{
 			if(_hWnd) {
 				::PostMessage(_hWnd,
-					npnumber_to_int(args[0]),
-					npnumber_to_int(args[0]),
-					npnumber_to_int(args[0]));
+					npnumber_to_int32(args[0]),
+					npnumber_to_int32(args[1]),
+					npnumber_to_int32(args[2]));
 			}
 		}
 		return true;
