@@ -47,47 +47,8 @@ var requiredRevision = ${version_revision};
 <script language="JavaScript" type="text/javascript">
 <!--
 
-
-	var Config =
-	{
-		isMouseGestureEnabled: true,
-		
-		isLockerGestureEnabled: true,
-		
-		isWheelGestureEnabled: true,
+	var ConfigJSON = '{"useLLMouseHook":false,"isWheelGestureEnabled":true,"handlers":{"default":{"vars":null,"type":"always","mappings":{"WE":{"prio":5,"actions":[{"vars":{"offset":1,"origin":"CURRENT"},"id":"tabNew"}],"type":"mouse"},"D":{"prio":5,"actions":[{"vars":{"origin":"CUR","offset":1},"id":"tabSelect"}],"type":"wheel"},"N":{"prio":5,"actions":[{"vars":null,"id":"tabReopen"}],"type":"mouse"},"S":{"prio":5,"actions":[{"vars":null,"id":"tabClose"}],"type":"mouse"},"E":{"prio":5,"actions":[{"vars":null,"id":"pageForward"}],"type":"mouse"},"U":{"prio":5,"actions":[{"vars":{"origin":"CUR","offset":-1},"id":"tabSelect"}],"type":"wheel"},"R":{"prio":5,"actions":[{"vars":{"origin":"CUR","offset":1},"id":"tabSelect"}],"type":"rocker"},"NS":{"prio":5,"actions":[{"vars":null,"id":"pageScrollToHead"}],"type":"mouse"},"L":{"prio":5,"actions":[{"vars":{"origin":"CUR","offset":-1},"id":"tabSelect"}],"type":"rocker"},"SN":{"prio":5,"actions":[{"vars":null,"id":"pageScrollToFoot"}],"type":"mouse"},"EW":{"prio":5,"actions":[{"vars":{"ignoreCache":true},"id":"pageReload"}],"type":"mouse"},"W":{"prio":5,"actions":[{"vars":null,"id":"pageBack"}],"type":"mouse"}}},"youtube":{"vars":{"pattern":"youtube\\.com\/.*?\\?\\bv=","isRegExp":true,"ignoreCase":true},"type":"URLMatch","mappings":{"NS":{"prio":7,"actions":[{"vars":{"ignoreCache":true},"id":"pageReload"}],"type":"mouse"}}}},"isRockerGestureEnabled":true,"processModuleFileName":"chrome.exe","isMouseGestureEnabled":true,"useShortcutKey":true,"replaceDLLByJavaScript":false}';
 	
-		useLLMouseHook: false,
-		
-		replaceDLLByJavaScript: false,
-		
-		processModuleFileName: "chrome.exe",
-		
-		useShortcutKey: true,
-
-		handlers:
-		{
-			"default": {
-				    type: "always",
-				mappings:
-				{
-
-					"EW": {type: "mouse" , actions:[{id: "pageReload", vars: {ignoreCache: true}}]},
-					"WE": {type: "mouse" , actions:[{id: "tabNew", vars: {offset: +1, origin: "CURRENT"}}]},
-					 "S": {type: "mouse" , actions:[{id: "tabClose"}]},
-					"NS": {type: "mouse" , actions:[{id: "pageScrollToHead"}]},
-					"SN": {type: "mouse" , actions:[{id: "pageScrollToFoot"}]},
-					 "N": {type: "mouse" , actions:[{id: "tabReopen"}]},
-					 "W": {type: "mouse" , actions:[{id: "pageBack"}]},
-					 "E": {type: "mouse" , actions:[{id: "pageForward"}]},
-					 "R": {type: "rocker", actions:[{id: "tabSelect", vars: {origin: "CUR", offset: +1}}]},
-					 "L": {type: "rocker", actions:[{id: "tabSelect", vars: {origin: "CUR", offset: -1}}]}
-				}
-			}
-		}
-	};
-	
-	var ConfigJSON = '{"isMouseGestureEnabled":true,"isLockerGestureEnabled":true,"isWheelGestureEnabled":true,"useLLMouseHook":false,"replaceDLLByJavaScript":false,"processModuleFileName":"chrome.exe","useShortcutKey":true,"handlers":{"default":{"type":"always","mappings":{"EW":{"type":"mouse","actions":[{"id":"pageReload","vars":{"ignoreCache":true}}]},"WE":{"type":"mouse","actions":[{"id":"tabNew","vars":{"offset":1,"origin":"CURRENT"}}]},"S":{"type":"mouse","actions":[{"id":"tabClose"}]},"NS":{"type":"mouse","actions":[{"id":"pageScrollToHead"}]},"SN":{"type":"mouse","actions":[{"id":"pageScrollToFoot"}]},"N":{"type":"mouse","actions":[{"id":"tabReopen"}]},"W":{"type":"mouse","actions":[{"id":"pageBack"}]},"E":{"type":"mouse","actions":[{"id":"pageForward"}]},"R":{"type":"rocker","actions":[{"id":"tabSelect","vars":{"origin":"CUR","offset":1}}]},"L":{"type":"rocker","actions":[{"id":"tabSelect","vars":{"origin":"CUR","offset":-1}}]}}}}}';
-			
 	function setup()
 	{
 	}

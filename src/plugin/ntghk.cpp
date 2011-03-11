@@ -612,7 +612,7 @@ void WINAPI ntghk_uninstallHook()
 
 int WINAPI ntghk_setProcessName(const char *name, size_t len)
 {
-	DEBUG_LOG("setProcessName: name="+ std::string(name, len));
+	DEBUG_LOG("ntghk_setProcessName: name="+ std::string(name, len));
 	if(len == 0 || len > sizeof(shared::processName)) {
 		return 1;
 	}
@@ -624,13 +624,14 @@ int WINAPI ntghk_setProcessName(const char *name, size_t len)
 
 void WINAPI ntghk_setDaemonHandle(HWND hWnd)
 {
-	DEBUG_LOG("setDaemonHandle: hWnd="+ string_cast((unsigned)hWnd));
+	DEBUG_LOG("ntghk_setDaemonHandle: hWnd="+ string_cast((unsigned)hWnd));
 	shared::daemonWnd = hWnd;
 }
 
 
 void WINAPI ntghk_setGestureMask(int mask)
 {
+	DEBUG_LOG("ntghk_setGestureMask: mask="+ string_cast(mask));
 	shared::isMouseGestureEnabled  = !!(mask & 1);
 	shared::isRockerGestureEnabled = !!(mask & 2);
 	shared::isWheelGestureEnabled  = !!(mask & 4);

@@ -67,7 +67,7 @@ namespace
 				this                     // その他の作成データ
 			);
 			//::SetLayeredWindowAttributes(_hWnd, 0, 50, LWA_ALPHA);
-			::SetLayeredWindowAttributes(_hWnd, 0xffffff, 0, LWA_COLORKEY);
+			::SetLayeredWindowAttributes(_hWnd, 0, 0, LWA_COLORKEY);
 			
 		}
 		
@@ -143,7 +143,7 @@ namespace
 				wc.hIcon   = NULL;
 				wc.hIconSm = NULL;
 				wc.hCursor = NULL;
-				wc.hbrBackground = static_cast<HBRUSH>(GetStockObject(WHITE_BRUSH));
+				wc.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
 				wc.lpszMenuName = NULL;
 				wc.lpszClassName = "ntg::TracerWindow";
 
@@ -191,7 +191,7 @@ namespace
 					rect.top    = 0;
 					rect.right  = width;
 					rect.bottom = height;
-					::FillRect( hCompatibleDC, &rect, HBRUSH(::GetStockObject(WHITE_BRUSH)) );
+					::FillRect( hCompatibleDC, &rect, HBRUSH(::GetStockObject(BLACK_BRUSH)) );
 				
 					_onPaint(hCompatibleDC);
 					

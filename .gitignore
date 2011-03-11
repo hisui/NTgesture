@@ -1,0 +1,14 @@
+
+
+src/plugin/*.obj
+src/plugin/*.dll
+src/plugin/*.lib
+src/plugin/*.exp
+src/plugin/*.res
+src/plugin/*.pdb
+src/plugin/*.ilk
+
+src/options/bin-debug
+src/options/bin-release
+
+src/options.swf

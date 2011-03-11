@@ -1,8 +1,8 @@
 <html>
 	<head>
 		<title>Background</title>
-		<script type="text/javascript" src="win32.js" />
-		<script>
+		<script type="text/javascript" src="win32.js"></script>
+		<script type="text/javascript">
 		
 			
 			//-----------------------------------------
@@ -404,7 +404,7 @@
 
 
 			// body.onload
-			function onLoad()
+			function setup()
 			{
 
 				NTG = document.getElementById("ntg");
@@ -423,6 +423,7 @@
 			// 設定を保存する(options.htmlから呼び出される予定)
 			function updateConfig(config, store)
 			{
+				console.log("updateConfig: called.");
 				Config = config || DefaultConfig;
 				readConfig();
 				if(store) {
@@ -434,6 +435,7 @@
 			// 設定を適用する
 			function readConfig()
 			{
+				console.log("readConfig: called.");
 				setGestureMask();
 			}
 			
@@ -487,7 +489,8 @@
 			
 		</script>
 	</head>
-	<body onload="onLoad()">
-		<object id="ntg" type="application/x-ntg-plugin" hidden="true">OMG</object>
+	<body onload="setup()">
+		<!--<object id="ntg" type="application/x-ntg-plugin" hidden="true">OMG</object>-->
+		<embed id="ntg" type="application/x-ntg-plugin" type="application/npcodeproject">
 	</body>
 </html>

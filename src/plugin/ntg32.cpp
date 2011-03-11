@@ -18,6 +18,7 @@ extern "C" {
 
 	BOOL WINAPI DllMain(HINSTANCE hInst, DWORD fdwReason, LPVOID lpvReserved)
 	{
+		DEBUG_LOG("DllMain");
 		gHInstance = hInst;
 		switch(fdwReason) {
 		case DLL_PROCESS_ATTACH: break;
@@ -29,7 +30,7 @@ extern "C" {
 	}
 
 	NPError OSCALL NP_GetEntryPoints(NPPluginFuncs* pFuncs) {
-		//DEBUG_LOG("NP_GetEntryPoints");
+		DEBUG_LOG("NP_GetEntryPoints");
 		pFuncs->version   = (NP_VERSION_MAJOR << 8) | NP_VERSION_MINOR;
 		pFuncs->newp      = NPP_New;
 		pFuncs->destroy   = NPP_Destroy;
@@ -41,7 +42,7 @@ extern "C" {
 
 	NPError OSCALL NP_Initialize(NPNetscapeFuncs* aNPNFuncs)
 	{
-		//DEBUG_LOG("NP_Initialize");
+		DEBUG_LOG("NP_Initialize");
 		gNPNFuncs = aNPNFuncs;
 
 		if(_initialized) {
@@ -55,7 +56,7 @@ extern "C" {
 
 	NPError OSCALL NP_Shutdown()
 	{
-		//DEBUG_LOG("NP_Shutdown");
+		DEBUG_LOG("NP_Shutdown");
 		if(_initialized) {
 			ntg::stopDaemon();
 		}
@@ -64,7 +65,7 @@ extern "C" {
 
 	char* NP_GetMIMEDescription()
 	{
-		//DEBUG_LOG("NP_GetMIMEDescription");
+		DEBUG_LOG("NP_GetMIMEDescription");
 		return "application/x-ntg-plugin";
 	}
 }

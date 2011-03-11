@@ -1,17 +1,16 @@
 ﻿
 #include "npp.h"
-#include "nppScriptableObject.h"
+#include "npapi_utils.h"
 #include "ntg32.h"
-#include "ntghk.h" // 本当はここでインクルードしたくない。ntghkへの操作はdaemonにカプセル化すること！
+#include "ntghk.h"
+
 #include <string.h>
 #include <vector>
 #include <map>
 
 namespace
 {
-
 	HWND _hWnd = 0;
-
 }
 
 class MyScriptableObject : public nppScriptableObject<MyScriptableObject>
@@ -31,15 +30,16 @@ public:
 	,_gestureListener(0)
 	,_hWnd(0)
 	{
-		//DEBUG_LOG("MyScriptableObject: CONSTRUCT");
+		DEBUG_LOG("MyScriptableObject: CONSTRUCT");
 	}
 	
 	~MyScriptableObject()
 	{
 		if(_gestureListener) {
 			gNPNFuncs->releaseobject(_gestureListener);
+			_gestureListener = 0;
 		}
-		//DEBUG_LOG("MyScriptableObject: DESTRUCT");
+		DEBUG_LOG("MyScriptableObject: DESTRUCT");
 	}
 
 	bool hasMethod(NPIdentifier name)
@@ -51,6 +51,8 @@ public:
 	bool invoke(NPIdentifier name, const NPVariant *args, uint32_t argCount, NPVariant *result)
 	{
 		static so_methods_t _methods;
+		DEBUG_LOG("MyScriptableObject.invoke");
+		
 		if(_methods.empty()) {
 			#define _ADD_SO_METHOD(NAME)   \
 				_methods.insert(           \
@@ -65,7 +67,6 @@ public:
 			#undef _ADD_SO_METHOD
 		}
 		so_methods_t::const_iterator i = _methods.find(name);
-		DEBUG_LOG("MyScriptableObject.invoke");
 		if(i != _methods.end()) {
 			return (this->*i->second)(args, argCount, result);
 		}
@@ -97,7 +98,7 @@ public:
 	
 	
 	//
-	//
+	// GestureListener にイベントを通知するメソッド
 	//
 
 	void fireMouseGestureBegin()
@@ -167,8 +168,9 @@ private:
 
 	bool setGestureListener(const NPVariant *args, uint32_t argCount, NPVariant *result)
 	{
-		//DEBUG_LOG("MyScriptableObject.setGestureListener: called!!!");
+		DEBUG_LOG("MyScriptableObject.setGestureListener: called!");
 		if(argCount == 1 && args[0].type == NPVariantType_Object) {
+			DEBUG_LOG("MyScriptableObject.setGestureListener: OK.");
 			if(_gestureListener) {
 				gNPNFuncs->releaseobject(_gestureListener);
 			}
@@ -181,13 +183,17 @@ private:
 
 	bool postMessage(const NPVariant *args, uint32_t argCount, NPVariant *result)
 	{
+		DEBUG_LOG("MyScriptableObject.postMessage: called!");
 		if(argCount == 3
-			&& args[0].type == NPVariantType_Int32
-			&& args[1].type == NPVariantType_Int32
-			&& args[2].type == NPVariantType_Int32)
+			&& IS_NPNUMBER(args[0])
+			&& IS_NPNUMBER(args[1])
+			&& IS_NPNUMBER(args[2]))
 		{
 			if(_hWnd) {
-				::PostMessage(_hWnd, args[0].value.intValue, args[1].value.intValue, args[2].value.intValue);
+				::PostMessage(_hWnd,
+					npnumber_to_int(args[0]),
+					npnumber_to_int(args[0]),
+					npnumber_to_int(args[0]));
 			}
 		}
 		return true;
@@ -234,11 +240,13 @@ private:
 	
 	bool sendKey(const NPVariant *args, uint32_t argCount, NPVariant *result)
 	{
+		DEBUG_LOG("MyScriptableObject.sendKey: called!");
+		// Chrome 10 から、数値リテラルの値が NPVariantType_Int32 ではなく NPVariantType_Double になったっぽい
 		if(argCount == 2
-			&& args[0].type == NPVariantType_Int32
-			&& args[1].type == NPVariantType_Int32)
+			&& IS_NPNUMBER(args[0])
+			&& IS_NPNUMBER(args[1]))
 		{
-			_sendKey_0(args[0].value.intValue, args[1].value.intValue);
+			_sendKey_0(npnumber_to_int32(args[0]), npnumber_to_int32(args[1]));
 		}
 		return true;
 	}

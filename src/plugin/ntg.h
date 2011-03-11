@@ -7,7 +7,9 @@
 #include <npfunctions.h>
 #include <npruntime.h>
 #include <windows.h>
+#include <stdlib.h>
 
+#include <stdexcept>
 #include <string>
 #include <fstream>
 #include <sstream>
